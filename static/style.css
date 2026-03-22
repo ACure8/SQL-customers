@@ -5,6 +5,7 @@
     --muted:#6b7280; 
     --nav: #ffffff;
 }
+
 html,body{
     height:100%;
     margin:0;
@@ -12,10 +13,14 @@ html,body{
     background:var(--bg);
     color:var(--text);
 }
+
 .container{
     max-width:900px;
     margin: 1rem auto;
     padding:1rem;
+    
+    display: flex;
+    grid-template-columns: auto;
 }
 
 nav{
@@ -23,7 +28,12 @@ nav{
     margin: auto;
     padding: 1rem;
     background:var(--nav);
+    text-align: top;
 
+}
+
+header{
+    text-align: top;
 }
 
 a{
@@ -37,16 +47,10 @@ a:hover {
     text-decoration: underline;
     
 }
+
 main{
     background:var(--card);
     padding:1.25rem;
     border-radius:8px;
     box-shadow:0 1px 6px rgba(0, 0, 0, 0.288);
-}
-
-header{
-    text-align: top;
-}
-nav{
-    text-align: top;
 }
