@@ -19,8 +19,11 @@ html,body{
     margin: 1rem auto;
     padding:1rem;
     
+    border: 2px solid #000;
+
     display: flex;
     grid-template-columns: auto;
+    
 }
 
 nav{
@@ -30,16 +33,22 @@ nav{
     background:var(--nav);
     text-align: top;
 
+    border: 2px solid #000;
+
 }
 
 header{
     text-align: top;
+
+    border: 2px solid #000;
 }
 
 a{
     margin-right:1rem;
     color:inherit;
     text-decoration: none;
+
+    border: 2px solid #000;
 }
 
 a:hover {
@@ -53,4 +62,6 @@ main{
     padding:1.25rem;
     border-radius:8px;
     box-shadow:0 1px 6px rgba(0, 0, 0, 0.288);
+
+    border: 2px solid #000;
 }
