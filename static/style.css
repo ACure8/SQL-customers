@@ -26,16 +26,27 @@ html,body{
     
 }
 
-nav{
+.nav{
 
     margin: auto;
     padding: 1rem;
     background:var(--nav);
     text-align: top;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
 
     border: 2px solid #000;
 
 }
+
+.nav-buttons {
+    display: flex;
+    text-align: right;
+    border: 2px solid #000;
+}
+
 
 header{
     text-align: top;
