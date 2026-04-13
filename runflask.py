@@ -4,7 +4,7 @@ website = Flask(__name__, template_folder="templates")
 
 @website.route("/")
 def main_page():
-    return render_template("Wowfood.html")
+    return render_template("Wowfoods.html")
 
 if __name__ == "__main__":
     print("\n\033[1;95m- LOADING... -\033[0m\n")
