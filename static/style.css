@@ -3,7 +3,7 @@
     --card:#ffffff; 
     --text:#111; 
     --nav: #ffffff;
-    --hover: #adadad;
+    --hover: #d1d1d1;
 }
 
 html,body{
@@ -45,7 +45,8 @@ a{
 .Cart{
     border-radius: 5px;
     background:var(--card);
-    border: 2px solid #b3b3b3;
+    border: 2px solid #a4a4a4;
+    border-width: auto;
 }
 
 .space{
@@ -70,18 +71,21 @@ a:hover {
     grid-template-columns: auto;
 }
 
-.container{
-    max-width:900px;
-    margin: 0rem auto;
-    padding: 1rem;
-    
+.imagescroll{
+    margin: 2rem auto;
+    width: auto;
+    height: 9rem;
     border: 2px solid #000;
-
     display: flex;
     grid-template-columns: auto;
+
     
 }
 
+.imagescroll img {
+    width: 17rem;
+    margin-right: 4rem;
+}
 
 main{
     background:var(--card);
