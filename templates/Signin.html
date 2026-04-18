@@ -11,13 +11,16 @@
 </head>
 <body>
     <nav class = "nav">
-        <img class="logo" src="" alt="wowfoods-logo" href="#">
-        <div class="nav buttons">
-            <a href="templates/Wowfoods.html" class="Home">Home</a>
-            <a href="templates/Menu.html" class="Menu">Menu</a>
-            <a href="templates/Signin.html" class="Signin"><i class="ri-user-line"></i>Sign in</a>
-            <a href="templates/Cart.html" class="Cart"><i class="ri-shopping-cart-2-line"></i>Cart</a>
+        <img class="logo" src="Logos/white w logo.png" alt="wowfoods-logo" href="#">
+        <div class="contentbar">
+            <i class="ri-menu-fill"></i>
         </div>
-    </nav>    
+        <div class="nav-buttons">
+            <a href="{{ url_for('home_page') }}" id="button" class="Home">Home</a>
+            <a href="{{ url_for('menu_page') }}" id="button" class="Menu">Menu</a>
+            <a href="{{ url_for('signin_page') }}" id="button" class="Signin"><i class="ri-user-line"></i>Sign in</a>
+            <a href="{{ url_for('cart_page') }}" id="button" class="Cart"><i class="ri-shopping-cart-2-line"></i>Cart</a>
+        </div>
+    </nav>
 </body>
 </html>

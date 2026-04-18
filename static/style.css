@@ -25,21 +25,21 @@ html,body{
     align-items: center;
     flex-direction: row;
 
-    border: 2px solid #000;
+    border: 2px solid #000; /*temp*/
 
 }
 
 .nav-buttons {
     display: flex;
     text-align: right;
+    visibility:visible;
 }
 
-a{
+#button{
     margin-right:1rem;
     color:inherit;
     text-decoration: none;
-    padding: 1rem;
-    border: 2px solid #000;
+    padding: 0.5rem 0.8rem;
 }
 
 .Cart{
@@ -49,33 +49,69 @@ a{
     border-width: auto;
 }
 
-.space{
-    margin-right: 5px;
+.order{
+    border-radius: 5px;
+    background:var(--card);
+    border: 2px solid #a4a4a4;
+    border-width: auto;
 }
 
-a:hover {
+i{
+    margin-right: 4px;
+}
+
+#button:hover {
     content: "";
     text-decoration: underline;
     border-radius: 5px;
     background:var(--hover);
 }
 
-.welcome {
+.contentbar{
+    display: none;
+    visibility:hidden;
+}
+
+@media only screen and (max-width: 900px) {
+    .nav-buttons {
+        display: none;
+        visibility:hidden;
+    }
+    .contentbar {
+        display: block;
+        visibility:visible;
+    }
+}
+
+.bgcolor {
     background-color: chartreuse;
     height: 20rem;
     width: auto;
     margin: 0rem 0rem;
     background-image: linear-gradient(to bottom, rgba(0,200,78,100), rgba(0,163,0,100));
+    align-items: center;
 
+    text-align: center;
     display: flex;
+    justify-content: center;
     grid-template-columns: auto;
+}
+
+.welcome{
+    font-size: clamp(12px, 2vw, 20px);
+    text-align: center;
+    border: 2px solid #000; /*temp*/
+    max-width: 50vw;
+    color: #ffffff;
+    align-items: center;
+    justify-content: center;
 }
 
 .imagescroll{
     margin: 2rem auto;
     width: auto;
     height: 9rem;
-    border: 2px solid #000;
+    border: 2px solid #000; /*temp*/
     display: flex;
     grid-template-columns: auto;
 
@@ -93,16 +129,16 @@ main{
     border-radius:8px;
     box-shadow:0 1px 6px rgba(0, 0, 0, 0.288);
 
-    border: 2px solid #000;
+    border: 2px solid #000; /*temp*/
 }
 
 header{
     text-align: top;
 
-    border: 2px solid #000;
+    border: 2px solid #000; /*temp*/
 }
 
 img{
-    border: 2px solid #000;
+    border: 2px solid #000; /*temp*/
 
 }
