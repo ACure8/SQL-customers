@@ -16,10 +16,10 @@
                 <i class="ri-menu-fill"></i>
             </div>
             <div class="nav-buttons">
-                <a href="{{ url_for('home_page') }}" id="button" class="Home">Home</a>
-                <a href="{{ url_for('menu_page') }}" id="button" class="Menu">Menu</a>
-                <a href="{{ url_for('signin_page') }}" id="button" class="Signin"><i class="ri-user-line"></i>Sign in</a>
-                <a href="{{ url_for('cart_page') }}" id="button" class="Cart"><i class="ri-shopping-cart-2-line"></i>Cart</a>
+                <a href="{{ url_for('home_page') }}" id="navbutton" class="Home">Home</a>
+                <a href="{{ url_for('menu_page') }}" id="navbutton" class="Menu">Menu</a>
+                <a href="{{ url_for('signin_page') }}" id="navbutton" class="Signin"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                <a href="{{ url_for('cart_page') }}" id="navbutton" class="Cart"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
             </div>
         </nav>
         <div class="main">
@@ -35,7 +35,7 @@
                         We got everything you need here with the best deals, so what are you waiting for?
                     </h4>
                     <a class="order" href='{{ url_for("menu_page") }}'>
-                        Click Me
+                        Order Now <i class="ri-arrow-right-line" id="orderi"></i>
                     </a>
                 </div>
             </div>
@@ -46,6 +46,7 @@
                     <img src="OIP.png" alt="img">
                     <img src="OIP.png" alt="img">
                     <img src="OIP.png" alt="img">
+                    
                 </div>
             </div>
         </div>

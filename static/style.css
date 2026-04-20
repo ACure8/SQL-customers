@@ -25,21 +25,22 @@ html,body{
     align-items: center;
     flex-direction: row;
 
-    border: 2px solid #000; /*temp*/
-
 }
 
 .nav-buttons {
     display: flex;
     text-align: right;
     visibility:visible;
+    
 }
 
-#button{
-    margin-right:1rem;
+#navbutton{
+    margin-right: 1rem;
     color:inherit;
     text-decoration: none;
     padding: 0.5rem 0.8rem;
+    border: #ffffff00 2px solid;
+    color: #000;
 }
 
 .Cart{
@@ -50,17 +51,40 @@ html,body{
 }
 
 .order{
+    font-size: 18px;
+    color: #000;
+    text-decoration: none;
+    padding: 0.6rem 2rem;
     border-radius: 5px;
     background:var(--card);
-    border: 2px solid #a4a4a4;
     border-width: auto;
 }
 
-i{
+.order:hover{
+    animation: increase-size 0.5s ease-in-out
+}
+
+@keyframes increase-size {
+    0% {
+        font-size: 18px;
+    }
+    98% {
+        font-size: 20px;
+    }
+    100% {
+        animation-play-state: paused;
+    }
+}
+
+#navi{
     margin-right: 4px;
 }
 
-#button:hover {
+#orderi{
+    margin-left: 4px;
+}
+
+#navbutton:hover {
     content: "";
     text-decoration: underline;
     border-radius: 5px;
@@ -72,7 +96,7 @@ i{
     visibility:hidden;
 }
 
-@media only screen and (max-width: 900px) {
+@media only screen and (max-width: 700px) {
     .nav-buttons {
         display: none;
         visibility:hidden;
@@ -91,36 +115,44 @@ i{
     background-image: linear-gradient(to bottom, rgba(0,200,78,100), rgba(0,163,0,100));
     align-items: center;
 
-    text-align: center;
     display: flex;
     justify-content: center;
     grid-template-columns: auto;
 }
 
 .welcome{
-    font-size: clamp(12px, 2vw, 20px);
+    font-size: clamp(16px, 2vw, 20px);
     text-align: center;
-    border: 2px solid #000; /*temp*/
-    max-width: 50vw;
+    max-width: 51vw;
     color: #ffffff;
     align-items: center;
     justify-content: center;
+    margin-bottom: 5vh;
 }
 
 .imagescroll{
     margin: 2rem auto;
-    width: auto;
     height: 9rem;
-    border: 2px solid #000; /*temp*/
+    border: 2px solid #000;
     display: flex;
+    align-items: center;
+    overflow: hidden;
+    flex-direction: row;
+    padding: 10px;
     grid-template-columns: auto;
+    overflow-x: hidden;
+     animation: hscroll; /* this is for the horizontal scroll if this works*/
+}
 
+@keyframes hscroll {
     
 }
 
 .imagescroll img {
-    width: 17rem;
+    width: 250px;
+    height: 100%;
     margin-right: 4rem;
+    flex-shrink: 0;
 }
 
 main{
@@ -136,9 +168,4 @@ header{
     text-align: top;
 
     border: 2px solid #000; /*temp*/
-}
-
-img{
-    border: 2px solid #000; /*temp*/
-
 }
