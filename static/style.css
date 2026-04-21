@@ -1,5 +1,5 @@
 :root{ 
-    --bg:#f5f7fb; 
+    --bg:#ffffff; 
     --card:#ffffff; 
     --text:#111; 
     --nav: #ffffff;
@@ -14,6 +14,14 @@ html,body{
     color:var(--text);
 }
 
+.night-lightmode{
+    position: absolute;
+    background: var(--card);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1000;
+}
+
 .nav{
     margin: auto;
     padding: 1rem 3rem;
@@ -24,7 +32,11 @@ html,body{
     justify-content: space-between;
     align-items: center;
     flex-direction: row;
+}
 
+.logo{
+    height: 5vh;
+    width: auto;
 }
 
 .nav-buttons {
