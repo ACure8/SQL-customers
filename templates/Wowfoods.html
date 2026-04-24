@@ -10,17 +10,17 @@
     <title>Wow Foods</title>
 </head>
     <body>
-        <div class="night-lightmode"><i class="ri-moon-fill"></i></div>
+        <div class="night-lightmode" onclick="darklightmode()"><i class="ri-moon-fill"></i></div>
         <nav class = "nav">
-            <img class="logo" src="/Logos/white w logo.png" alt="wowfoods-logo" href="#">
+            <img id="logo" src="/Logos/white w logo.png" alt="wowfoods-logo" href="#">
             <div class="contentbar">
                 <i class="ri-menu-fill"></i>
             </div>
             <div class="nav-buttons">
-                <a href="{{ url_for('home_page') }}" id="navbutton" class="Home">Home</a>
-                <a href="{{ url_for('menu_page') }}" id="navbutton" class="Menu">Menu</a>
-                <a href="{{ url_for('signin_page') }}" id="navbutton" class="Signin"><i class="ri-user-line" id="navi"></i>Sign in</a>
-                <a href="{{ url_for('cart_page') }}" id="navbutton" class="Cart"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+                <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
+                <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
+                <a href="{{ url_for('signin_page') }}" id="navbutton" class="signin"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                <a href="{{ url_for('cart_page') }}" id="navbutton" class="cart"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
             </div>
         </nav>
         <div class="main">
@@ -35,9 +35,11 @@
                     <h4>
                         We got everything you need here with the best deals, so what are you waiting for?
                     </h4>
-                    <a class="order" href='{{ url_for("menu_page") }}'>
-                        Order Now <i class="ri-arrow-right-line" id="orderi"></i>
-                    </a>
+                    <div class="order-btn">
+                        <a class="order" href='{{ url_for("menu_page") }}'>
+                            Order Now <i class="ri-arrow-right-line" id="orderi"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
             <div id="container"> 

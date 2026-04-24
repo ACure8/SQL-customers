@@ -2,6 +2,17 @@ from flask import Flask, render_template, send_from_directory
 
 website = Flask(__name__, template_folder="templates")
 
+
+
+
+
+
+
+
+
+
+
+
 @website.route("/")
 def home_page():
     return render_template("Wowfoods.html")

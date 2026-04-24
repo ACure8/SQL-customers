@@ -1,8 +1,8 @@
 :root{ 
-    --bg:#ffffff; 
-    --card:#ffffff; 
-    --text:#111; 
-    --nav: #ffffff;
+    --bg: white; 
+    --card: white; 
+    --text: black; 
+    --nav: white;
     --hover: #d1d1d1;
 }
 
@@ -20,6 +20,8 @@ html,body{
     border-radius: 50%;
     cursor: pointer;
     z-index: 1000;
+    text-align: right;
+    visibility: hidden;
 }
 
 .nav{
@@ -34,7 +36,7 @@ html,body{
     flex-direction: row;
 }
 
-.logo{
+#logo{
     height: 5vh;
     width: auto;
 }
@@ -52,40 +54,63 @@ html,body{
     text-decoration: none;
     padding: 0.5rem 0.8rem;
     border: #ffffff00 2px solid;
-    color: #000;
+    color: var(--text);
 }
 
-.Cart{
+.cart{
     border-radius: 5px;
     background:var(--card);
     border: 2px solid #a4a4a4;
     border-width: auto;
 }
 
+.order-btn {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
 .order{
     font-size: 18px;
-    color: #000;
+    color: var(--text);
     text-decoration: none;
     padding: 0.6rem 2rem;
     border-radius: 5px;
     background:var(--card);
-    border-width: auto;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    transition: font-size 0.25s ease;
+
+}
+
+.order::after {
+    content: "";
+    position: absolute;
+    left: -130%;
+    bottom: 0;
+    width: 40%;
+    height: 100%;
+    transform: skew(-45deg);
+    background: linear-gradient(
+        145deg,
+        transparent,
+        rgba(216, 216, 216, 0.32),
+        transparent
+    );
+    transition: left 1.5s ease;
+    
+}
+
+.order:hover::after {
+    left: 130%;
 }
 
 .order:hover{
-    animation: increase-size 0.5s ease-in-out
-}
-
-@keyframes increase-size {
-    0% {
-        font-size: 18px;
-    }
-    98% {
-        font-size: 20px;
-    }
-    100% {
-        animation-play-state: paused;
-    }
+    font-size: 20px;
 }
 
 #navi{
@@ -136,7 +161,7 @@ html,body{
     font-size: clamp(16px, 2vw, 20px);
     text-align: center;
     max-width: 51vw;
-    color: #ffffff;
+    color: #ffffff; /*temp*/
     align-items: center;
     justify-content: center;
     margin-bottom: 5vh;
@@ -153,7 +178,7 @@ html,body{
     padding: 10px;
     grid-template-columns: auto;
     overflow-x: hidden;
-     animation: hscroll; /* this is for the horizontal scroll if this works*/
+    animation: hscroll; /* this is for the horizontal scroll if this works*/
 }
 
 @keyframes hscroll {
