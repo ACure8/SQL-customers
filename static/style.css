@@ -169,7 +169,7 @@ html,body{
 
 .imagescroll{
     margin: 2rem auto;
-    height: 9rem;
+    height: 10rem;
     border: 2px solid #000;
     display: flex;
     align-items: center;
@@ -178,17 +178,22 @@ html,body{
     padding: 10px;
     grid-template-columns: auto;
     overflow-x: hidden;
-    animation: hscroll; /* this is for the horizontal scroll if this works*/
+
+    animation: hscroll 10s linear infinite;
 }
 
 @keyframes hscroll {
-    
+    0% {
+      transform: translate(0, 0);
+    }
+    100% {
+      transform: translate(-50%, 0);
+    }
 }
 
 .imagescroll img {
-    width: 250px;
-    height: 100%;
-    margin-right: 4rem;
+    width: 400px;
+    height: auto;
     flex-shrink: 0;
 }
 
