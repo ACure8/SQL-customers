@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, sqlite3, easygui as eg
 
 website = Flask(__name__, template_folder="templates")
 
