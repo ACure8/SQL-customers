@@ -21,7 +21,7 @@ html,body{
     cursor: pointer;
     z-index: 1000;
     text-align: right;
-    visibility: hidden;
+    visibility: visible;
 }
 
 .nav{
@@ -57,6 +57,23 @@ html,body{
     color: var(--text);
 }
 
+#navbutton:hover {
+    content: "";
+    text-decoration: underline;
+    border-radius: 5px;
+    background-color: var(--hover);
+    transition: background-color 0.5s ease;
+}
+
+#navbutton:not(:hover) {
+    content: "";
+    text-decoration: none;
+    border-radius: 5px;
+    background-color: var(--nav);
+    transition: background-color 0.5s ease;
+}
+
+
 .cart{
     border-radius: 5px;
     background:var(--card);
@@ -77,10 +94,11 @@ html,body{
     font-size: 18px;
     color: var(--text);
     text-decoration: none;
+    margin-top: 40px;
     padding: 0.6rem 2rem;
     border-radius: 5px;
     background:var(--card);
-    position: relative;
+    position: absolute;
     overflow: hidden;
     z-index: 1;
     transition: font-size 0.25s ease;
@@ -98,10 +116,10 @@ html,body{
     background: linear-gradient(
         145deg,
         transparent,
-        rgba(216, 216, 216, 0.32),
+        rgba(219, 204, 204, 0.24),
         transparent
     );
-    transition: left 1.5s ease;
+    transition: left 0.75s ease;
     
 }
 
@@ -119,13 +137,6 @@ html,body{
 
 #orderi{
     margin-left: 4px;
-}
-
-#navbutton:hover {
-    content: "";
-    text-decoration: underline;
-    border-radius: 5px;
-    background:var(--hover);
 }
 
 .contentbar{
@@ -161,15 +172,16 @@ html,body{
     font-size: clamp(16px, 2vw, 20px);
     text-align: center;
     max-width: 51vw;
-    color: #ffffff; /*temp*/
+    color: #ffffff;
     align-items: center;
     justify-content: center;
-    margin-bottom: 5vh;
+    margin-bottom: 4vh;
+    margin-top: 0.5vh;
 }
 
-.imagescroll{
+.carousel {
     margin: 2rem auto;
-    height: 10rem;
+    height: 6rem;
     border: 2px solid #000;
     display: flex;
     align-items: center;
@@ -178,24 +190,26 @@ html,body{
     padding: 10px;
     grid-template-columns: auto;
     overflow-x: hidden;
-
-    animation: hscroll 10s linear infinite;
 }
-
-@keyframes hscroll {
-    0% {
-      transform: translate(0, 0);
-    }
-    100% {
-      transform: translate(-50%, 0);
-    }
+.carousel__track {
+    display: flex;
 }
-
-.imagescroll img {
+.carousel__slide {
     width: 400px;
     height: auto;
     flex-shrink: 0;
 }
+
+.intro{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin: 2rem auto;
+    max-width: 90vw;
+    
+}
+
 
 main{
     background:var(--card);
