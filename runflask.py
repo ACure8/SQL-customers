@@ -8,45 +8,45 @@ def home_page():
     '''home route'''
     connect = sqlite3.connect("wowfoods.db")
     c = connect.cursor()
-    players = c.execute("""SELECT *
+    categories = c.execute("""SELECT *
                             FROM Categories 
                             ORDER BY category_id ASC;
                             """).fetchall()
     connect.close()
-    return render_template('Wowfoods.html')
+    return render_template('Wowfoods.html', categories=categories)
 
 @website.route("/menu")
 def menu_page():
     connect = sqlite3.connect("wowfoods.db")
     c = connect.cursor()
-    players = c.execute("""SELECT *
+    categories = c.execute("""SELECT *
                             FROM Categories 
                             ORDER BY category_id ASC;
                             """).fetchall()
     connect.close()
-    return render_template("Menu.html")
+    return render_template("Menu.html", categories=categories)
 
 @website.route("/cart")
 def cart_page():
     connect = sqlite3.connect("wowfoods.db")
     c = connect.cursor()
-    players = c.execute("""SELECT *
+    categories = c.execute("""SELECT *
                             FROM Categories 
                             ORDER BY category_id ASC;
                             """).fetchall()
     connect.close()
-    return render_template("Cart.html")
+    return render_template("Cart.html", categories=categories)
 
 @website.route("/account")
 def signin_page():
     connect = sqlite3.connect("wowfoods.db")
     c = connect.cursor()
-    players = c.execute("""SELECT *
+    categories = c.execute("""SELECT *
                             FROM Categories 
                             ORDER BY category_id ASC;
                             """).fetchall()
     connect.close()
-    return render_template("Signin.html")
+    return render_template("Signin.html", categories=categories)
 
 @website.route('/user/<username>')
 def show_user(username):

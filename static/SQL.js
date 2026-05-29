@@ -1,3 +1,5 @@
+
+
 function darklightmode() {
     const logo = document.getElementById("logo");
     const currentSrc = logo.src.split("/").pop();
