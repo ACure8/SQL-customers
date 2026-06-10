@@ -25,11 +25,10 @@ html,body{
 }
 
 .nav{
-    margin: auto;
+    margin: 0 auto;
     padding: 1rem 3rem;
     max-width: 90vw;
     background:var(--nav);
-    text-align: top;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -279,8 +278,44 @@ header{
     flex-direction: row;
     flex-wrap: wrap;
     gap: 1.5rem;
-    margin: 2rem auto;
-    max-width: 90vw;
+    margin: 2rem 0;
+    max-width: 100%;
+}
+
+.categorylist{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    max-width: 100%;
+}
+
+.categorylist.move{
+    justify-content: space-evenly;
+    align-items: center;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    transition: all 0.6s ease;
+    margin: 2rem 15px;
+}
+
+.categorylist ~ .products .productcards {
+    display: flex;
+    opacity: 0;
+    transform: translateY(4rem);
+    transition: transform 0.8s ease, opacity 1s ease;
+    pointer-events: none;
+}
+
+.categorylist.move ~ .products .productcards {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 .categorycard{
@@ -294,6 +329,18 @@ header{
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10), 0 1.5px 6px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+}
+
+.categorycard.move{
+    height: 7rem;
+    min-width: 9rem;
+    max-width: 9rem;
+    transition: all 0.6s ease;
+    .categoryname{
+        font: bold 0.8rem sans-serif; 
+        transition: all 0.6s ease;
+    }
 }
 
 .categoryname{
@@ -320,12 +367,12 @@ header{
     }
 }
 
-.productcard{
+.productcards{
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: stretch;
-    height: 20rem;
+    height: 22rem;
     width: 15rem;
     background-color: rgb(184, 184, 184);
     border-radius: 10px;
@@ -334,50 +381,37 @@ header{
     position: relative;
 }
 
-.productcard img {
+.productcards img {
     height: 12rem;
     width: 100%;
     object-fit: cover;
     flex-shrink: 0;
 }
 
-.buy-btn{
-    transform: translateY(0);
-    transition: transform 0.3s ease;
-    pointer-events: none;
-}
-
-.productcard:hover .buy-btn {
-    transform: translateY(10rem);
-    pointer-events: auto;
-}
-
 .productdetails{
     color: var(--text);
     background-color: white;
-    padding: 0.25rem 0;
     width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     align-items: stretch;
     flex: 0 0 12rem;
     overflow: hidden;
-    font: bold 1.1rem sans-serif;
+    font: bold 14px sans-serif;
+
 }
 
 .productnameprice{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.25rem 0rem;
-    font-size: 1rem;
+    padding: 0rem 0rem;
 }
 
 #details {
-    padding: 0rem 0.5rem;
+    padding: 0rem 1rem;
     margin: 0.15rem 0;
-    line-height: 1.2;
+    display: flex;
 }
 
 .productname{
@@ -389,13 +423,31 @@ header{
     color: rgb(45, 178, 19);
 }
 
-.buy-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
+/* .producttags{
+    border-radius: 15px;
+    background-color: rgb(45, 178, 19);
+}   do this when you seperate all the tags from each other*/
+
+/* .producttags:hover{
+    .producttagsdesc{
+        display: visible;
+    }
+    
+} planned to make a box(with description) that pops up when hovering on certain tags*/
+
+/* .buy-btn button {
+    cursor: pointer;
     text-decoration: none;
-}
+    padding: 10px 20px;
+    border: 1px solid #000000;
+    background: #000000;
+    width: 100%;
+    color: #fff;
+    box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
+        0 15px 12px rgba(0, 0, 0, 0.22);
+    border-radius: 10px;
+} */
+
 
 .buy-btn button {
     cursor: pointer;
@@ -403,8 +455,142 @@ header{
     padding: 10px 20px;
     border: 1px solid #000000;
     background: #000000;
+    width: 90%;   /*for when the button is in the card and not sliding down*/
     color: #fff;
     box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
         0 15px 12px rgba(0, 0, 0, 0.22);
     border-radius: 10px;
 }
+
+.buy-btn{
+    /* transform: translateY(0); */
+    /* transition: transform 0.3s ease; */
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    text-decoration: none;
+}
+
+.productcards:hover .buy-btn {
+    /* transform: translateY(6rem); */
+    pointer-events: auto;
+}
+
+
+.form-center{
+    justify-content: center; 
+    align-items: center; 
+    display: flex; 
+    height: 80vh; 
+    flex-direction: column;
+}
+
+.form-page {
+    max-width: clamp(20rem, 40vw, 40vw);
+    align-items: center;
+    height: 29rem;
+}
+
+.signinup{
+    align-items: center;
+    display: flex;
+    text-align: right;
+    border-bottom: 4px solid #36bd18;
+    max-width: clamp(20rem, 40vw, 40vw);
+    margin: 2rem auto;
+    justify-content: space-evenly;
+    
+}
+
+.signup, .signin{
+    height: 3rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font: bold 16px sans-serif;
+    color: #000;
+    transform: translateY(0px);
+    transition: transform 0.2s ease;
+}
+
+.signup:hover, .signin:hover{
+    transform: translateY(-4px);
+    transition: transform 0.2s ease;
+}
+
+.signup.active, .signin.active {
+    background-color: #36bd18;
+    color: #ffffff;
+    transform: translateY(0px);
+    transition: transform 0s;
+}
+
+.form-control{
+    font: lighter 16px sans-serif;
+    padding: 12px 0 12px 20px;
+    width: clamp(200px, 20vw ,25vw);
+    border: 2px solid #d0d0d0;
+    border-radius: 10px;
+    margin: 0 15px 20px 15px;
+}
+
+.form-control:focus {
+    border-color: #36bd18;
+    box-shadow: 0 0 6px 2px #36bd186e;
+}
+
+.forgot-password a, .forgot-password{
+    text-align: right;
+    text-decoration: none;
+    color: #36bd18;
+    font: bold 14px sans-serif;
+}
+
+.btn-primary{
+    width: 100%;
+    background: #36bd18;
+    color: white;
+    padding: 16px;
+    border: none;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 15px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10), 0 1.5px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(0);
+    transition: all 0.2s ease;
+
+}
+.btn-primary:hover{
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.247), 0 2px 6px rgba(0, 0, 0, 0.066);
+    transform: translateY(-0.2rem);
+    transition: all 0.2s ease;
+}
+
+.form-container {
+    display: none;
+    text-align: center;
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.form-container.active {
+    display: flex;
+    animation: fadeIn 0.6s ease;
+}
+
+/* details {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+} */                           /* not showing */

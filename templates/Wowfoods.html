@@ -17,6 +17,14 @@
             </a>
             <div class="contentbar">
                 <i class="ri-menu-fill"></i>
+                <!-- <i class="ri-menu-fill" id="menuToggle" aria-label="Open menu" role="button" tabindex="0"></i>
+                <div class="menu-popup" id="menuPopup" aria-hidden="true">
+                    <button class="menu-close" id="menuClose" aria-label="Close menu">&times;</button>
+                    <a href="{{ url_for('home_page') }}">Home</a>
+                    <a href="{{ url_for('menu_page') }}">Menu</a>
+                    <a href="{{ url_for('signin_page') }}">Sign in</a>
+                    <a href="{{ url_for('cart_page') }}">Cart</a> -->
+                </div>
             </div>
             <div class="nav-buttons">
                 <a href="{{ url_for('home_page') }}" id="navbutton" class="home"><span class="tabselected">Home</span></a>
@@ -65,10 +73,10 @@
 
         <div class="products">
             {% for product in products[:4] %}
-            <div class="productcard">
-                <a href="" class="buy-btn">
+            <div class="productcards">
+                <!-- <a href="" class="buy-btn">
                     <button>+ Add to Cart</button>
-                </a>
+                </a> -->
                 <img src="{{ url_for('static', filename=product.image_url) }}" alt="{{ product.product_name }}">
                 <div class ="productdetails">
                     <div class="productnameprice">
@@ -76,15 +84,18 @@
                         <h3 class="productprice" id="details">${{ "%.2f"|format(product.price) }}</h2>
                     </div>
                     <h4 class="productcate" id="details">{{ product.category_name }}</h3>
-                    <h5 class="producttags" id="details">{{ product.tags }}</h3>
+                    <h5 class="producttags" id="details">{{ product.tags }}</h3> 
                     <h6 class="producttagdesc" id="details">{{ product.tag_descriptions }}</h3>
                     
+                    <a href="" class="buy-btn">
+                        <button>+ Add to Cart</button>
+                    </a>
                 </div>
             </div>
             {% endfor %}
         </div>
         <footer>
-            <p>&copy; 2023 Wow Foods. All rights reserved.</p>
+            <p>&copy; 2026 Wow Foods. All rights reserved.</p>
         </footer>
         <script src="{{ url_for('static', filename='SQL.js') }}"></script>
     </body>

@@ -4,23 +4,104 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="icon" href="favicon.ico">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
-    <title></title>
+    <title>Wow Foods</title>
 </head>
-<body>
-    <nav class = "nav">
-        <img class="logo" src="/logos/white w logo.png" alt="wowfoods-logo" href="#">
-        <div class="contentbar">
-            <i class="ri-menu-fill"></i>
+    <body>
+        <div class="night-lightmode" onclick="darklightmode()"><i class="ri-moon-fill"></i></div>
+        <nav class = "nav">
+            <a href="{{ url_for('home_page') }}">
+                <img id="logo" src="{{ url_for('static', filename='logos/white w logo.png') }}" alt="wowfoods-logo">
+            </a>
+            <div class="contentbar">
+                <i class="ri-menu-fill"></i>
+            </div>
+
+            <div class="nav-buttons">
+                <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
+                <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
+                <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+            </div>
+        </nav>
+        <div class="form-center">
+            <div class="form-page">
+                <div class="signinup">
+                    <a href="#" class="signup" id="signup" onclick="showSignup()">Sign up</a>
+                    <a href="#" class="signin active" id="signin" onclick="showSignin()">Sign in</a>
+                </div>
+                <div class="form-container active" id="loginForm"> 
+                    <form id="loginFormSubmit" action="{{ url_for('signin_page') }}" method="POST" autocomplete="on">
+                        <div class="form-group">
+                            <input type="email"
+                                class="form-control"
+                                name="email"
+                                autocomplete="email"
+                                placeholder="Email Address"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password"
+                                class="form-control"
+                                name="password"
+                                autocomplete="current-password"
+                                placeholder="Password"
+                                required>
+                        </div>
+                        <div class="forgot-password">
+                            <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <span class="btn-text">Sign In</span>
+                        </button>
+                    </form>
+                </div>
+                <div class="form-container" id="signupForm">
+                
+                    <form id="signupFormSubmit" action="{{ url_for('signin_page') }}" method="POST" autocomplete="on">
+                        <div class="form-group">
+                            <input type="text" class="form-control" name="full_name" autocomplete="name" placeholder="Full Name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="email" class="form-control" name="email" autocomplete="email" placeholder="Email Address" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="password" autocomplete="new-password" placeholder="Password" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="password" class="form-control" name="confirm_password" id="confirmPassword" autocomplete="new-password" placeholder="Confirm Password" required>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terms" required>
+                            <label for="terms">I agree to the following <a href="#" style="color: #3b82f6; font-weight: 600;">Privacy Policy</a> <a href="#" style="color: #3b82f6; font-weight: 600;">Terms of Service</a></label>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <span class="btn-text">Create Account</span>
+                        </button>
+                    </form>
+                </div>
+                <div class="form-container" id="forgotForm">
+                    <form id="forgotFormSubmit" action="{{ url_for('signin_page') }}" method="POST">
+                        <div class="form-group">
+                            <input type="email" class="form-control" name="forgot_email" placeholder="Email Address" required>
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <span class="btn-text">Send Reset Instructions</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="nav-buttons">
-            <a href="{{ url_for('home_page') }}" id="button" class="Home">Home</a>
-            <a href="{{ url_for('menu_page') }}" id="button" class="Menu">Menu</a>
-            <a href="{{ url_for('signin_page') }}" id="button" class="Signin"><i class="ri-user-line"></i>Sign in</a>
-            <a href="{{ url_for('cart_page') }}" id="button" class="Cart"><i class="ri-shopping-cart-2-line"></i>Cart</a>
-        </div>
-    </nav>
-</body>
+        <footer>
+            <p>&copy; 2026 Wow Foods. All rights reserved.</p>
+        </footer>
+        <script src="{{ url_for('static', filename='SQL.js') }}"></script>
+    </body>
 </html>

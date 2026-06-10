@@ -9,18 +9,21 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
     <title></title>
 </head>
-<body>
-    <nav class = "nav">
-        <img class="logo" src="/logos/white w logo.png" alt="wowfoods-logo" href="#">
-        <div class="contentbar">
-            <i class="ri-menu-fill"></i>
-        </div>
-        <div class="nav-buttons">
-            <a href="{{ url_for('home_page') }}" id="button" class="Home">Home</a>
-            <a href="{{ url_for('menu_page') }}" id="button" class="Menu">Menu</a>
-            <a href="{{ url_for('signin_page') }}" id="button" class="Signin"><i class="ri-user-line"></i>Sign in</a>
-            <a href="{{ url_for('cart_page') }}" id="button" class="Cart"><i class="ri-shopping-cart-2-line"></i>Cart</a>
-        </div>
-    </nav> 
-</body>
+    <body>
+        <div class="night-lightmode" onclick="darklightmode()"><i class="ri-moon-fill"></i></div>
+        <nav class = "nav">
+            <a href="{{ url_for('home_page') }}">
+                <img id="logo" src="{{ url_for('static', filename='logos/white w logo.png') }}" alt="wowfoods-logo">
+            </a>
+            <div class="contentbar">
+                <i class="ri-menu-fill"></i>
+            </div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
+                <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
+                <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+            </div>
+        </nav>
+    </body>
 </html>
