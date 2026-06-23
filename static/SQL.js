@@ -1,53 +1,53 @@
-function showSignup(){
-    var login = document.getElementById('loginForm');
-    var signup = document.getElementById('signupForm');
-    var forgot = document.getElementById('forgotForm');
-    var tabsignin = document.getElementById('signin');
-    var tabsignup = document.getElementById('signup');
+function showSignup() {
+  var login = document.getElementById('loginForm');
+  var signup = document.getElementById('signupForm');
+  var forgot = document.getElementById('forgotForm');
+  var tabsignin = document.getElementById('signin');
+  var tabsignup = document.getElementById('signup');
 
-    if(login) login.classList.remove('active'); tabsignin.classList.remove('active');
-    if(signup) signup.classList.add('active'); tabsignup.classList.add('active');
-    if(forgot) forgot.classList.remove('active');
+  if (login) login.classList.remove('active'); tabsignin.classList.remove('active');
+  if (signup) signup.classList.add('active'); tabsignup.classList.add('active');
+  if (forgot) forgot.classList.remove('active');
 }
 
-function showSignin(){
-    var login = document.getElementById('loginForm'); 
-    var signup = document.getElementById('signupForm');
-    var forgot = document.getElementById('forgotForm');
-    var tabsignin = document.getElementById('signin');
-    var tabsignup = document.getElementById('signup');
+function showSignin() {
+  var login = document.getElementById('loginForm');
+  var signup = document.getElementById('signupForm');
+  var forgot = document.getElementById('forgotForm');
+  var tabsignin = document.getElementById('signin');
+  var tabsignup = document.getElementById('signup');
 
-    if(login) login.classList.add('active'); tabsignin.classList.add('active');
-    if(signup) signup.classList.remove('active'); tabsignup.classList.remove('active');
-    if(forgot) forgot.classList.remove('active');
+  if (login) login.classList.add('active'); tabsignin.classList.add('active');
+  if (signup) signup.classList.remove('active'); tabsignup.classList.remove('active');
+  if (forgot) forgot.classList.remove('active');
 }
 
-function showForgotPassword(){
-    var login = document.getElementById('loginForm');
-    var signup = document.getElementById('signupForm');
-    var forgot = document.getElementById('forgotForm');
-    var tabsignin = document.getElementById('signin');
-    var tabsignup = document.getElementById('signup');
+function showForgotPassword() {
+  var login = document.getElementById('loginForm');
+  var signup = document.getElementById('signupForm');
+  var forgot = document.getElementById('forgotForm');
+  var tabsignin = document.getElementById('signin');
+  var tabsignup = document.getElementById('signup');
 
-    if(login) login.classList.remove('active'); tabsignin.classList.remove('active');
-    if(signup) signup.classList.remove('active'); tabsignup.classList.remove('active');
-    if(forgot) forgot.classList.add('active');
+  if (login) login.classList.remove('active'); tabsignin.classList.remove('active');
+  if (signup) signup.classList.remove('active'); tabsignup.classList.remove('active');
+  if (forgot) forgot.classList.add('active');
 }
 
 // basic client-side signup confirm-password check
-document.addEventListener('submit', function(e){
-    if(e.target && e.target.id === 'signupFormSubmit'){
-        var pwd = e.target.querySelector('input[name="password"]');
-        var conf = e.target.querySelector('input[name="confirm_password"]');
-        if(pwd && conf && pwd.value !== conf.value){
-            e.preventDefault();
-            alert('Passwords do not match');
-        }
-        if(pwd && pwd.value.trim().length < 8){
-            e.preventDefault();
-            alert('Passwords must be at least 8 characters long!');
-        }
+document.addEventListener('submit', function (e) {
+  if (e.target && e.target.id === 'signupFormSubmit') {
+    var pwd = e.target.querySelector('input[name="password"]');
+    var conf = e.target.querySelector('input[name="confirm_password"]');
+    if (pwd && conf && pwd.value !== conf.value) {
+      e.preventDefault();
+      alert('Passwords do not match');
     }
+    if (pwd && pwd.value.trim().length < 8) {
+      e.preventDefault();
+      alert('Passwords must be at least 8 characters long!');
+    }
+  }
 });
 
 
@@ -68,9 +68,9 @@ document.addEventListener('submit', function(e){
 //         animation: slideInRight 0.5s ease;
 //     `;
 //     notification.textContent = message;
-    
+
 //     document.body.appendChild(notification);
-    
+
 //     setTimeout(() => {
 //         notification.remove();
 //     }, 4000);
@@ -87,7 +87,7 @@ document.addEventListener('submit', function(e){
 //         document.documentElement.style.setProperty("--text", "white");
 //         document.documentElement.style.setProperty("--nav", "black");
 //     } 
-    
+
 //     else {
 //         logo.src = "/logos/white w logo.png";
 //         document.documentElement.style.setProperty("--bg", "white");
@@ -98,27 +98,27 @@ document.addEventListener('submit', function(e){
 
 // }
 
-function movecategories(clickedEl){
+function movecategories(clickedEl) {
   // Add the 'move' class to all category cards (keeps existing behavior)
-    document.querySelectorAll('.categorycard').forEach(cc => {
-          cc.classList.add('move');
-    });
-    // Also mark the container so we can force a horizontal, scrollable layout
-    var categorylist = document.getElementById('categorylist');
+  document.querySelectorAll('.categorycard').forEach(cc => {
+    cc.classList.add('move');
+  });
+  // Also mark the container so we can force a horizontal, scrollable layout
+  var categorylist = document.getElementById('categorylist');
 
-    if(categorylist) categorylist.classList.add('move'); 
+  if (categorylist) categorylist.classList.add('move');
 }
 
 
 
 (() => {
-  const track   = document.querySelector('.carousel__track');
-  const slides  = Array.from(track.children);   // real slides only
-  const slideW  = slides[0].offsetWidth + parseFloat(getComputedStyle(slides[0]).marginRight);
-  let   index   = 1;                           // start on the *real* first slide
+  const track = document.querySelector('.carousel__track');
+  const slides = Array.from(track.children);   // real slides only
+  const slideW = slides[0].offsetWidth + parseFloat(getComputedStyle(slides[0]).marginRight);
+  let index = 1;                           // start on the *real* first slide
 
   const firstClone = slides[0].cloneNode(true);
-  const lastClone  = slides[slides.length - 1].cloneNode(true);
+  const lastClone = slides[slides.length - 1].cloneNode(true);
 
   // Remove/replace IDs and hide from AT (assistive tech)
   firstClone.removeAttribute('id');

@@ -1,10 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 website = Flask(__name__, template_folder="templates", static_folder="static")
-website.secret_key = "supersecret"
+website.secret_key = "****"
 DB_PATH = "wowfoods.db"
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -120,8 +122,8 @@ def cart_page():
     connect.close()
     return render_template("Cart.html", categories=categories, products=products, accounts=accounts)
 
-@website.route("/account", methods=["GET", "POST"])
-def signin_page():
+@website.route("/account")
+def account_page():
     connect = get_db()
     c = connect.cursor()
 
@@ -142,6 +144,20 @@ def signin_page():
                                     User_Payment_Info AS pi ON u.user_id = pi.user_id
                                 ORDER BY u.user_id
                                 """).fetchall()
+
+    connect.close()
+    return render_template("Accounts.html", users=users)
+
+
+@website.route('/signin', methods=["GET", "POST"])
+def signin_page():
+    connect = get_db()
+    c = connect.cursor()
+
+    users = c.execute("""SELECT *
+                        FROM Users AS u
+                        ORDER BY u.user_id
+                        """).fetchall()
     
     if request.method == "POST":
         if request.form.get("forgot_email"):
@@ -154,6 +170,8 @@ def signin_page():
             email = request.form["email"].strip().lower()
             password = request.form["password"]
             confirm_password = request.form["confirm_password"]
+            date_of_birth = request.form.get("date_of_birth") # "get" returns True or False
+            wants_offers = True if request.form.get("wants_offers") in ("on", "1", "true") else False
 
             if password != confirm_password:
                 connect.close()
@@ -161,7 +179,7 @@ def signin_page():
 
             existing_user = c.execute(
                 "SELECT user_id FROM Users WHERE email = ?",
-                (email,)
+                (email,) # the "email," makes it a Tuple but if it was "email" then it sends as a str(may make an error)
             ).fetchone()
 
             if existing_user:
@@ -169,14 +187,24 @@ def signin_page():
                 return "An account with that email already exists."
 
             password_hash = generate_password_hash(password)
+            # compute next user_id (next integer after current max)
+            max_id_row = c.execute("SELECT MAX(user_id) AS max_id FROM Users").fetchone()
+            next_id = 1
+            if max_id_row and max_id_row["max_id"] is not None:
+                try:
+                    next_id = int(max_id_row["max_id"]) + 1
+                except Exception:
+                    next_id = max_id_row["max_id"] + 1
+
+            # Use the database CURRENT_TIMESTAMP to keep the default timestamp format
             c.execute(
-                """INSERT INTO Users (full_name, email, password_hash, created_at)
-                   VALUES (?, ?, ?, CURRENT_TIMESTAMP)""",
-                (full_name, email, password_hash)
+                """INSERT INTO Users (user_id, full_name, email, password_hash, date_of_birth, wants_offers, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+                (next_id, full_name, email, password_hash, date_of_birth, wants_offers)
             )
             connect.commit()
             connect.close()
-            return "Registration successful. Please sign in."
+            return redirect(url_for("show_user", username=full_name))
 
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -186,10 +214,10 @@ def signin_page():
         ).fetchone()
 
         if user and check_password_hash(user["password_hash"], password):
-            session["user_id"] = user["user_id"]
-            session["full_name"] = user["full_name"]
-            connect.close()
-            return redirect(url_for("cart_page"))
+            # session["user_id"] = user["user_id"]
+            # session["full_name"] = user["full_name"]
+            # connect.close()
+           return redirect(url_for("show_user", username=user["full_name"])) # redirect to a URL that contains the user's name to indicate signed-in state
 
         connect.close()
         return "Invalid email or password."
@@ -198,9 +226,51 @@ def signin_page():
     connect.close()
     return render_template("Signin.html", users=users)
 
-@website.route('/user/<username>')
+def _set_session_for_username(username):
+    # try to resolve user_id from the database and set session
+    conn = get_db()
+    cur = conn.cursor()
+    row = cur.execute("""SELECT user_id, full_name 
+                        FROM Users 
+                        WHERE full_name = ?
+                        """, (username,)).fetchone()
+    if row:
+        session["user_id"] = row["user_id"]
+        session["full_name"] = row["full_name"]
+    else:
+        return "that account doesn't exist so no sessions"
+        # session["full_name"] = username
+    conn.close()
+
+
+@website.route('/<username>')
 def show_user(username):
-   return f'Hello {username} ! please wait while we send you back'
+    _set_session_for_username(username)
+    return redirect(url_for('home_page_user', username=username))
+
+
+@website.route('/<username>')
+def home_page_user(username):
+    _set_session_for_username(username)
+    return home_page()
+
+
+@website.route('/menu/<username>')
+def menu_page_user(username):
+    _set_session_for_username(username)
+    return menu_page()
+
+
+@website.route('/cart/<username>')
+def cart_page_user(username):
+    _set_session_for_username(username)
+    return cart_page()
+
+
+@website.route('/account/<username>')
+def account_page_user(username):
+    _set_session_for_username(username)
+    return account_page()
 
 
 # # Error handling for page not found errors 

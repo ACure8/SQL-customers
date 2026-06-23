@@ -22,15 +22,22 @@
                     <button class="menu-close" id="menuClose" aria-label="Close menu">&times;</button>
                     <a href="{{ url_for('home_page') }}">Home</a>
                     <a href="{{ url_for('menu_page') }}">Menu</a>
-                    <a href="{{ url_for('signin_page') }}">Sign in</a>
+                    <a href="{{ url_for('account_page') }}">Sign in</a>
                     <a href="{{ url_for('cart_page') }}">Cart</a> -->
                 </div>
             </div>
             <div class="nav-buttons">
-                <a href="{{ url_for('home_page') }}" id="navbutton" class="home"><span class="tabselected">Home</span></a>
-                <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
-                <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
-                <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+                    {% if session.get('user_id') %}
+                        <a href="{{ url_for('home_page_user', username=session.get('full_name')) }}" id="navbutton" class="home"><span class="tabselected">Home</span></a>
+                        <a href="{{ url_for('menu_page_user', username=session.get('full_name')) }}" id="navbutton" class="menu">Menu</a>
+                        <a href="{{ url_for('account_page_user', username=session.get('full_name')) }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Account</a>
+                        <a href="{{ url_for('cart_page_user', username=session.get('full_name')) }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+                    {% else %}
+                        <a href="{{ url_for('home_page') }}" id="navbutton" class="home"><span class="tabselected">Home</span></a>
+                        <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
+                        <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                        <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+                    {% endif %}
             </div>
         </nav>
         <div class="main">
@@ -46,7 +53,7 @@
                         We got everything you need here with the best deals, so what are you waiting for?
                     </h4>
                     <div class="order-btn">
-                        <a class="order" href='{{ url_for("menu_page") }}'>
+                        <a class="order" href='{{ url_for("menu_page") if session.get("user_id") else url_for("account_page") }}'>
                             Order Now <i class="ri-arrow-right-line" id="orderi"></i>
                         </a>
                     </div>
