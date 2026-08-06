@@ -15,7 +15,6 @@ def get_db():
 
 @website.route("/")
 def home_page():
-    '''home route'''
     connect = get_db()
     c = connect.cursor()
     products = c.execute("""SELECT p.product_id,
@@ -122,10 +121,19 @@ def cart_page():
     connect.close()
     return render_template("Cart.html", categories=categories, products=products, accounts=accounts)
 
-@website.route("/account")
+@website.route("/account", methods=["GET", "POST"])
 def account_page():
+    username = session.get("full_name", "")
+    return account_page_user(username)
+
+@website.route("/account/<username>", methods=["GET", "POST"])
+def account_page_user(username):
+    _set_session_for_username(username)
     connect = get_db()
     c = connect.cursor()
+
+    if request.method == "POST":
+        return _process_auth_request(connect, c)
 
     users = c.execute("""SELECT u.user_id,
                                     u.full_name,
@@ -144,9 +152,70 @@ def account_page():
                                     User_Payment_Info AS pi ON u.user_id = pi.user_id
                                 ORDER BY u.user_id
                                 """).fetchall()
+    connect.close()
+    return render_template("Accounts.html", username=username, users=users)
+
+def _process_auth_request(connect, c):
+    if request.form.get("forgot_email"):
+        forgot_email = request.form["forgot_email"].strip()
+        connect.close()
+        return f"Password reset instructions would be sent to {forgot_email} if this were enabled."
+
+    if request.form.get("full_name") and request.form.get("confirm_password"):
+        full_name = request.form["full_name"].strip()
+        email = request.form["email"].strip().lower()
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+        date_of_birth = request.form.get("date_of_birth") # "get" returns True or False
+        wants_offers = True if request.form.get("wants_offers") in ("on", "1", "true") else False
+
+        if password != confirm_password:
+            connect.close()
+            return "Passwords do not match."
+
+        existing_user = c.execute(
+            "SELECT user_id FROM Users WHERE email = ?",
+            (email,)
+        ).fetchone()
+
+        if existing_user:
+            connect.close()
+            return "An account with that email already exists."
+
+        password_hash = generate_password_hash(password)
+        max_id_row = c.execute("SELECT MAX(user_id) AS max_id FROM Users").fetchone()
+        next_id = 1
+        if max_id_row and max_id_row["max_id"] is not None:
+            try:
+                next_id = int(max_id_row["max_id"]) + 1
+            except Exception:
+                next_id = max_id_row["max_id"] + 1
+
+        c.execute(
+            """INSERT INTO Users (user_id, full_name, email, password_hash, date_of_birth, wants_offers, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
+            (next_id, full_name, email, password_hash, date_of_birth, wants_offers)
+        )
+        connect.commit()
+        connect.close()
+        return redirect(url_for("home_page_user", username=full_name))
+
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    user = c.execute(
+        "SELECT user_id, full_name, password_hash FROM Users WHERE email = ?",
+        (email,)
+    ).fetchone()
+
+    if user and check_password_hash(user["password_hash"], password):
+        # set session cookie so the user's name persists across pages
+        session["user_id"] = user["user_id"]
+        session["full_name"] = user["full_name"]
+        connect.close()
+        return redirect(url_for("home_page_user", username=user["full_name"]))
 
     connect.close()
-    return render_template("Accounts.html", users=users)
+    return "Invalid email or password."
 
 
 @website.route('/signin', methods=["GET", "POST"])
@@ -160,68 +229,7 @@ def signin_page():
                         """).fetchall()
     
     if request.method == "POST":
-        if request.form.get("forgot_email"):
-            forgot_email = request.form["forgot_email"].strip()
-            connect.close()
-            return f"Password reset instructions would be sent to {forgot_email} if this were enabled."
-
-        if request.form.get("full_name") and request.form.get("confirm_password"):
-            full_name = request.form["full_name"].strip()
-            email = request.form["email"].strip().lower()
-            password = request.form["password"]
-            confirm_password = request.form["confirm_password"]
-            date_of_birth = request.form.get("date_of_birth") # "get" returns True or False
-            wants_offers = True if request.form.get("wants_offers") in ("on", "1", "true") else False
-
-            if password != confirm_password:
-                connect.close()
-                return "Passwords do not match."
-
-            existing_user = c.execute(
-                "SELECT user_id FROM Users WHERE email = ?",
-                (email,) # the "email," makes it a Tuple but if it was "email" then it sends as a str(may make an error)
-            ).fetchone()
-
-            if existing_user:
-                connect.close()
-                return "An account with that email already exists."
-
-            password_hash = generate_password_hash(password)
-            # compute next user_id (next integer after current max)
-            max_id_row = c.execute("SELECT MAX(user_id) AS max_id FROM Users").fetchone()
-            next_id = 1
-            if max_id_row and max_id_row["max_id"] is not None:
-                try:
-                    next_id = int(max_id_row["max_id"]) + 1
-                except Exception:
-                    next_id = max_id_row["max_id"] + 1
-
-            # Use the database CURRENT_TIMESTAMP to keep the default timestamp format
-            c.execute(
-                """INSERT INTO Users (user_id, full_name, email, password_hash, date_of_birth, wants_offers, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)""",
-                (next_id, full_name, email, password_hash, date_of_birth, wants_offers)
-            )
-            connect.commit()
-            connect.close()
-            return redirect(url_for("show_user", username=full_name))
-
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "")
-        user = c.execute(
-            "SELECT user_id, full_name, password_hash FROM Users WHERE email = ?",
-            (email,)
-        ).fetchone()
-
-        if user and check_password_hash(user["password_hash"], password):
-            # session["user_id"] = user["user_id"]
-            # session["full_name"] = user["full_name"]
-            # connect.close()
-           return redirect(url_for("show_user", username=user["full_name"])) # redirect to a URL that contains the user's name to indicate signed-in state
-
-        connect.close()
-        return "Invalid email or password."
-
+        return _process_auth_request(connect, c)
 
     connect.close()
     return render_template("Signin.html", users=users)
@@ -238,15 +246,10 @@ def _set_session_for_username(username):
         session["user_id"] = row["user_id"]
         session["full_name"] = row["full_name"]
     else:
-        return "that account doesn't exist so no sessions"
-        # session["full_name"] = username
+        pass
+        # return "that account doesn't exist so no sessions"
+        session["full_name"] = username
     conn.close()
-
-
-@website.route('/<username>')
-def show_user(username):
-    _set_session_for_username(username)
-    return redirect(url_for('home_page_user', username=username))
 
 
 @website.route('/<username>')
@@ -265,12 +268,6 @@ def menu_page_user(username):
 def cart_page_user(username):
     _set_session_for_username(username)
     return cart_page()
-
-
-@website.route('/account/<username>')
-def account_page_user(username):
-    _set_session_for_username(username)
-    return account_page()
 
 
 # # Error handling for page not found errors 
