@@ -72,7 +72,7 @@
         </div>
 
         <div class="products">
-            {% for product in products[:4] %}
+            {% for product in popular %}
             <div class="productcards">
                 <!-- <a href="" class="buy-btn">
                     <button>+ Add to Cart</button>
@@ -84,8 +84,6 @@
                         <h3 class="productprice" id="details">${{ "%.2f"|format(product.price) }}</h2>
                     </div>
                     <h4 class="productcate" id="details">{{ product.category_name }}</h3>
-                    <h5 class="producttags" id="details">{{ product.tags }}</h3> 
-                    <h6 class="producttagdesc" id="details">{{ product.tag_descriptions }}</h3>
                     
                     <a href="" class="buy-btn">
                         <button>+ Add to Cart</button>

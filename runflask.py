@@ -5,7 +5,7 @@ from datetime import datetime
 
 website = Flask(__name__, template_folder="templates", static_folder="static")
 website.secret_key = "****"
-DB_PATH = "wowfoods.db"
+DB_PATH = "wowfoodsnew.db"
 
 
 def get_db():
@@ -17,35 +17,18 @@ def get_db():
 def home_page():
     connect = get_db()
     c = connect.cursor()
-    products = c.execute("""SELECT p.product_id,
-                                p.product_name,
-                                p.price,
-                                p.image_url,
-                                c.category_name,
-                                GROUP_CONCAT(t.tag_name, ', ') AS tags,
-                                GROUP_CONCAT(t.description, ', ') AS tag_descriptions
-                            FROM Products AS p
-                                JOIN
-                                Categories AS c ON p.category_id = c.category_id
-                                LEFT JOIN
-                                Product_Dietary_Tags AS pt ON p.product_id = pt.product_id
-                                LEFT JOIN
-                                Dietary_Tags AS t ON pt.tag_id = t.tag_id
-                            GROUP BY p.product_id
-                            ORDER BY p.product_id ASC
-                            """).fetchall()
     popular = c.execute("""SELECT p.product_id,
-                                p.product_name,
-                                SUM(oi.quantity) AS total_units_sold,
-                                SUM(oi.quantity * oi.price_at_purchase) AS total_revenue
-                            FROM Products p
-                                JOIN
-                                Order_Items oi ON p.product_id = oi.product_id
-                            GROUP BY p.product_id
-                            ORDER BY total_units_sold DESC;
-                            """).fetchall()
+                            p.product_name,
+                            SUM(oi.quantity) AS total_units_sold,
+                            SUM(oi.quantity * oi.price_at_purchase) AS total_revenue
+                        FROM Products p
+                            JOIN
+                            Order_Items oi ON p.product_id = oi.product_id
+                        GROUP BY p.product_id
+                        ORDER BY total_units_sold DESC
+                        """).fetchall()
     connect.close()
-    return render_template('Wowfoods.html', products=products, popular=popular)
+    return render_template('Wowfoods.html', popular=popular)
 
 @website.route("/menu")
 def menu_page():
