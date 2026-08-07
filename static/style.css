@@ -435,19 +435,6 @@ header{
     
 } planned to make a box(with description) that pops up when hovering on certain tags*/
 
-/* .buy-btn button {
-    cursor: pointer;
-    text-decoration: none;
-    padding: 10px 20px;
-    border: 1px solid #000000;
-    background: #000000;
-    width: 100%;
-    color: #fff;
-    box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
-        0 15px 12px rgba(0, 0, 0, 0.22);
-    border-radius: 10px;
-} */
-
 
 .buy-btn button {
     cursor: pointer;
@@ -457,8 +444,8 @@ header{
     background: #000000;
     width: 90%;   /*for when the button is in the card and not sliding down*/
     color: #fff;
-    box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
-        0 15px 12px rgba(0, 0, 0, 0.22);
+    /* box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
+        0 15px 12px rgba(0, 0, 0, 0.22); */
     border-radius: 10px;
 }
 
@@ -469,8 +456,8 @@ header{
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
     text-decoration: none;
+    margin: auto 0 20px 0;
 }
 
 .productcards:hover .buy-btn {
@@ -594,3 +581,9 @@ header{
     align-items: center;
     justify-content: center;
 } */                           /* not showing */
+
+footer{
+    background-color: #14134b;
+    color: #fff;
+    height: 100px;
+}
