@@ -21,7 +21,7 @@
                     <button class="menu-close" id="menuClose" aria-label="Close menu">&times;</button>
                     <a href="{{ url_for('home_page') }}">Home</a>
                     <a href="{{ url_for('menu_page') }}">Menu</a>
-                    <a href="{{ url_for('account_page') }}">Sign in</a>
+                    <a href="{{ url_for('accounts_page') }}">Sign in</a>
                     <a href="{{ url_for('cart_page') }}">Cart</a> -->
                 </div>
             </div>
@@ -49,7 +49,7 @@
                         We got everything you need here with the best deals, so what are you waiting for?
                     </h4>
                     <div class="order-btn">
-                        <a class="order" href='{{ url_for("menu_page") if session.get("user_id") else url_for("account_page") }}'>
+                        <a class="order" href='{{ url_for("menu_page") if session.get("user_id") else url_for("accounts_page") }}'>
                             Order Now <i class="ri-arrow-right-line" id="orderi"></i>
                         </a>
                     </div>
