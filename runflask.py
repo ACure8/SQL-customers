@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timezone
 
 website = Flask(__name__, template_folder="templates", static_folder="static")
 website.secret_key = "****"
@@ -13,30 +13,487 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-@website.route("/signin")
+
+def get_next_id(cursor, table_name, id_column):
+    max_row = cursor.execute(f"SELECT MAX({id_column}) AS m FROM {table_name}").fetchone()
+    if not max_row:
+        return 1
+    if isinstance(max_row, sqlite3.Row):
+        current_max = max_row['m']
+    else:
+        current_max = max_row[0]
+    return (current_max if current_max is not None else 0) + 1
+
+
+@website.route('/cart', methods=['GET', 'POST'])
+def cart_page():
+    # POST actions: add to cart (product_id) or purchase (action=purchase)
+    if request.method == 'POST':
+        # actions: add (default), update, remove, purchase
+        product_id = request.form.get('product_id')
+        action = request.form.get('action', 'add')
+
+        # normalize product_id when present
+        if product_id:
+            try:
+                product_id = int(product_id)
+            except Exception:
+                return redirect(request.referrer or url_for('menu_page'))
+
+        # Update quantity for an item
+        if action == 'update' and product_id:
+            try:
+                qty = int(request.form.get('quantity', 1))
+            except Exception:
+                qty = 1
+
+            user_id = session.get('user_id')
+            if user_id:
+                connect = get_db()
+                c = connect.cursor()
+                order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+                if not order:
+                    connect.close()
+                    return redirect(request.referrer or url_for('cart_page'))
+                order_id = order['order_id']
+                existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id)).fetchone()
+                if qty <= 0:
+                    if existing:
+                        c.execute("DELETE FROM Order_Items WHERE order_item_id = ?", (existing['order_item_id'],))
+                else:
+                    if existing:
+                        c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (qty, existing['order_item_id']))
+                    else:
+                        prod = c.execute("SELECT price FROM Products WHERE product_id = ?", (product_id,)).fetchone()
+                        price = float(prod['price']) if prod and prod['price'] is not None else 0.0
+                        next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
+                        c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
+                                  (next_order_item_id, order_id, product_id, qty, price))
+                # recompute total and update session cart
+                total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
+                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                connect.commit()
+                connect.close()
+
+                cart = {}
+                for it in items:
+                    cart[str(it['product_id'])] = {
+                        'product_id': it['product_id'],
+                        'product_name': it['product_name'],
+                        'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
+                        'image_url': it['image_url'],
+                        'category_name': None,
+                        'quantity': it['quantity']
+                    }
+                session['cart'] = cart
+                session.modified = True
+                return redirect(request.referrer or url_for('cart_page'))
+
+            # guest session cart
+            cart = session.get('cart', {})
+            key = str(product_id)
+            if qty <= 0:
+                cart.pop(key, None)
+            else:
+                if key in cart:
+                    cart[key]['quantity'] = qty
+                else:
+                    # attempt to fetch product metadata to insert
+                    connect = get_db()
+                    c = connect.cursor()
+                    prod = c.execute("SELECT product_id, product_name, price, image_url, category_id FROM Products WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
+                    connect.close()
+                    if prod:
+                        cart[key] = {
+                            'product_id': prod['product_id'],
+                            'product_name': prod['product_name'],
+                            'price': float(prod['price']) if prod['price'] is not None else 0.0,
+                            'image_url': prod['image_url'],
+                            'category_name': None,
+                            'quantity': qty
+                        }
+            session['cart'] = cart
+            session.modified = True
+            return redirect(request.referrer or url_for('cart_page'))
+
+        # Remove item from cart
+        if action == 'remove' and product_id:
+            user_id = session.get('user_id')
+            if user_id:
+                connect = get_db()
+                c = connect.cursor()
+                order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+                if order:
+                    order_id = order['order_id']
+                    c.execute("DELETE FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id))
+                    total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
+                    total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                    c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                    items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                    connect.commit()
+                    connect.close()
+
+                    cart = {}
+                    for it in items:
+                        cart[str(it['product_id'])] = {
+                            'product_id': it['product_id'],
+                            'product_name': it['product_name'],
+                            'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
+                            'image_url': it['image_url'],
+                            'category_name': None,
+                            'quantity': it['quantity']
+                        }
+                    session['cart'] = cart
+                    session.modified = True
+                    return redirect(request.referrer or url_for('cart_page'))
+                connect.close()
+                return redirect(request.referrer or url_for('cart_page'))
+
+            # guest
+            cart = session.get('cart', {})
+            cart.pop(str(product_id), None)
+            session['cart'] = cart
+            session.modified = True
+            return redirect(request.referrer or url_for('cart_page'))
+
+        # Add to cart (default)
+        if action == 'add' and product_id:
+            connect = get_db()
+            c = connect.cursor()
+            product = c.execute("""
+                                SELECT p.product_id, p.product_name, p.price, p.image_url, c.category_name
+                                FROM Products p
+                                LEFT JOIN Categories c ON p.category_id = c.category_id
+                                WHERE p.product_id = ?
+                                LIMIT 1
+                                """, (product_id,)).fetchone()
+            connect.close()
+
+            if not product:
+                return redirect(request.referrer or url_for('menu_page'))
+
+            user_id = session.get('user_id')
+            # If user is signed in, persist the cart as an Orders row with status 'cart'
+            if user_id:
+                connect = get_db()
+                c = connect.cursor()
+                order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+                if order:
+                    order_id = order['order_id']
+                else:
+                    order_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
+                    # compute next order_id
+                    max_row = c.execute("SELECT MAX(order_id) AS m FROM Orders").fetchone()
+                    next_order_id = (max_row['m'] if max_row and max_row['m'] is not None else 0) + 1
+                    c.execute("INSERT INTO Orders (order_id, user_id, order_date, total_price, status) VALUES (?, ?, ?, ?, ?)", (next_order_id, user_id, order_date, 0.0, 'cart'))
+                    order_id = next_order_id
+
+                # update or insert order item
+                existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product['product_id'])).fetchone()
+                if existing:
+                    new_qty = existing['quantity'] + 1
+                    c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (new_qty, existing['order_item_id']))
+                else:
+                    next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
+                    c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
+                              (next_order_item_id, order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
+
+                # recompute order total
+                total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
+                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+
+                # fetch order items to mirror session cart for UI
+                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                connect.commit()
+                connect.close()
+
+                cart = {}
+                for it in items:
+                    cart[str(it['product_id'])] = {
+                        'product_id': it['product_id'],
+                        'product_name': it['product_name'],
+                        'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
+                        'image_url': it['image_url'],
+                        'category_name': None,
+                        'quantity': it['quantity']
+                    }
+                session['cart'] = cart
+                session.modified = True
+                return redirect(request.referrer or url_for('menu_page'))
+
+            # not signed-in: keep session-only cart
+            cart = session.get('cart', {})
+            key = str(product['product_id'])
+            if key in cart:
+                cart[key]['quantity'] = cart[key].get('quantity', 0) + 1
+            else:
+                cart[key] = {
+                    'product_id': product['product_id'],
+                    'product_name': product['product_name'],
+                    'price': float(product['price']) if product['price'] is not None else 0.0,
+                    'image_url': product['image_url'],
+                    'category_name': product['category_name'],
+                    'quantity': 1
+                }
+            session['cart'] = cart
+            session.modified = True
+            return redirect(request.referrer or url_for('menu_page'))
+
+        # Purchase action
+        if action == 'purchase':
+            # Only allow purchase when the user is signed in
+            if not session.get('user_id'):
+                return redirect(url_for('signin_page'))
+            user_id = session.get('user_id')
+            connect = get_db()
+            c = connect.cursor()
+            # if a persisted 'cart' order exists for user, mark it as placed
+            order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+            if order:
+                order_id = order['order_id']
+                # mark order as pending shipping
+                c.execute("UPDATE Orders SET status = 'Pending' WHERE order_id = ?", (order_id,))
+                # ensure total_price is up-to-date
+                total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
+                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                # record payment as Paid
+                pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
+                next_pay_id = (pay_row['m'] if pay_row and pay_row['m'] is not None else 0) + 1
+                payment_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
+                c.execute("INSERT INTO Payments (payment_id, order_id, amount_paid, payment_date, payment_status) VALUES (?, ?, ?, ?, ?)", (next_pay_id, order_id, total, payment_date, 'Paid'))
+                connect.commit()
+                connect.close()
+                session.pop('cart', None)
+                return redirect(url_for('accounts_page'))
+
+            # fallback: no persisted order found — try to purchase session cart
+            cart = session.get('cart')
+            if not cart:
+                connect.close()
+                return redirect(url_for('cart_page'))
+
+            # create new order from session cart
+            order_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
+            total = 0.0
+            for k, v in cart.items():
+                qty = int(v.get('quantity', 1))
+                price = float(v.get('price', 0.0))
+                total += qty * price
+
+            # create a new order with explicit next order_id and status Pending
+            status = 'Pending'
+            max_row = c.execute("SELECT MAX(order_id) AS m FROM Orders").fetchone()
+            next_order_id = (max_row['m'] if max_row and max_row['m'] is not None else 0) + 1
+            c.execute("INSERT INTO Orders (order_id, user_id, order_date, total_price, status) VALUES (?, ?, ?, ?, ?)", (next_order_id, user_id, order_date, total, status))
+            order_id = next_order_id
+            for key, item in cart.items():
+                product_id = item['product_id']
+                qty = int(item.get('quantity', 1))
+                price = float(item.get('price', 0.0))
+                next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
+                c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
+                          (next_order_item_id, order_id, product_id, qty, price))
+            # record payment as Paid
+            pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
+            next_pay_id = (pay_row['m'] if pay_row and pay_row['m'] is not None else 0) + 1
+            payment_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
+            c.execute("INSERT INTO Payments (payment_id, order_id, amount_paid, payment_date, payment_status) VALUES (?, ?, ?, ?, ?)", (next_pay_id, order_id, total, payment_date, 'Paid'))
+
+            connect.commit()
+            connect.close()
+            session.pop('cart', None)
+            return redirect(url_for('accounts_page'))
+
+    # GET: render cart view (existing behavior)
+    cart_items = []
+    if session.get('user_id'):
+        connect = get_db()
+        c = connect.cursor()
+        order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (session.get('user_id'),)).fetchone()
+        if order:
+            items = c.execute("SELECT oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+            for it in items:
+                cart_items.append({
+                    'product_id': it['product_id'],
+                    'product_name': it['product_name'],
+                    'quantity': it['quantity'],
+                    'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
+                    'image_url': it['image_url']
+                })
+        connect.close()
+    else:
+        if session.get('cart'):
+            cart_items = list(session.get('cart', {}).values())
+
+    return render_template('Cart.html', cart_items=cart_items, current_user=session.get('full_name'))
+
+@website.route("/signin", methods=["GET", "POST"])
 def signin_page():
-    return
+    # if already signed in, show accounts page instead
+    if session.get('user_id'):
+        return redirect(url_for('accounts_page'))
+
+    error = None
+    formdata = {}
+    if request.method == 'POST':
+        formdata = {k: v for k, v in request.form.items()}
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        connect = get_db()
+        c = connect.cursor()
+        user = c.execute("""
+                        SELECT *
+                        FROM Users
+                        WHERE email = ?
+                        LIMIT 1
+                        """, (email,)).fetchone()
+        connect.close()
+
+        if user:
+            # verify password if column exists; otherwise accept plain match
+            try:
+                stored = user['password']
+            except Exception:
+                stored = None
+
+            verified = False
+            if stored:
+                try:
+                    verified = check_password_hash(stored, password)
+                except Exception:
+                    verified = (stored == password)
+            else:
+                # no password stored: fail
+                verified = False
+
+            if verified:
+                # set temporary session (signed-in) -- persists until sign out or browser close depending on config
+                session['user_id'] = user['user_id']
+                session['full_name'] = user.get('full_name') if isinstance(user, dict) or hasattr(user, 'get') else user['full_name']
+                return redirect(url_for('accounts_page'))
+            else:
+                error = 'Invalid credentials'
+        else:
+            # account does not exist: keep form info and show error
+            error = 'Account not found'
+
+    # provide list of users for template if needed and pass formdata and current user
+    connect = get_db()
+    c = connect.cursor()
+    users = c.execute("""
+                        SELECT *
+                        FROM Users AS u
+                        ORDER BY u.user_id
+                        """).fetchall()
+    connect.close()
+    return render_template('Signin.html', users=users, error=error, formdata=formdata, current_user=session.get('full_name'))
 
 @website.route("/")
 def home_page():
     connect = get_db()
     c = connect.cursor()
     popular = c.execute("""
+                        SELECT p.product_id,
+                            p.product_name,
+                            p.price,
+                            p.image_url,
+                            c.category_name,
+                            SUM(oi.quantity) AS total_units_sold,
+                            SUM(oi.quantity * oi.price_at_purchase) AS total_revenue
+                        FROM Products p
+                            LEFT JOIN Categories c ON p.category_id = c.category_id
+                            LEFT JOIN Order_Items oi ON p.product_id = oi.product_id
+                        GROUP BY p.product_id
+                        ORDER BY total_units_sold DESC
                         """).fetchall()
     connect.close()
-    return render_template('Wowfoods.html', popular=popular)
+    return render_template('Wowfoods.html', popular=popular, current_user=session.get('full_name'))
 
 @website.route("/menu")
 def menu_page():
-    return
+    connect = get_db()
+    c = connect.cursor()
+    categories = c.execute("""
+                            SELECT *
+                            FROM Categories 
+                            ORDER BY category_id ASC
+                            """).fetchall()
+    products = c.execute("""
+                        SELECT p.product_id,
+                            p.category_id,
+                            c.category_name,
+                            p.product_name,
+                            p.price,
+                            p.description,
+                            p.image_url
+                        FROM Products AS p
+                        LEFT JOIN Categories AS c
+                            ON p.category_id = c.category_id
+                        ORDER BY p.product_id ASC
+                            """).fetchall()
+    connect.close()
+    return render_template('Menu.html', categories=categories, products=products, current_user=session.get('full_name'))
 
-@website.route("/cart")
-def cart_page():
-    return
+@website.route("/accounts")
+def accounts_page():
+    # protect accounts page: only accessible when signed in
+    if not session.get('user_id'):
+        return redirect(url_for('signin_page'))
 
-@website.route("/cart")
-def cart_page():
-    return
+    connect = get_db()
+    c = connect.cursor()
+    accounts = c.execute("""
+                        SELECT *
+                        FROM Users
+                        ORDER BY user_id
+                        """).fetchall()
+    # optionally fetch orders for the signed-in user
+    user_orders = c.execute("""
+                        SELECT o.*
+                        FROM Orders o
+                        WHERE o.user_id = ? AND o.status != 'cart'
+                        ORDER BY o.order_date DESC
+                        """, (session.get('user_id'),)).fetchall()
+    # fetch order items for these orders
+    order_items = c.execute("""
+                        SELECT oi.order_id, oi.product_id, oi.quantity, oi.price_at_purchase, p.product_name
+                        FROM Order_Items oi
+                        JOIN Orders o ON oi.order_id = o.order_id
+                        LEFT JOIN Products p ON oi.product_id = p.product_id
+                        WHERE o.user_id = ? AND o.status != 'cart'
+                        ORDER BY oi.order_id ASC
+                        """, (session.get('user_id'),)).fetchall()
+    # fetch payments for these orders
+    payments = c.execute("""
+                        SELECT pay.payment_id, pay.order_id, pay.amount_paid, pay.payment_date, pay.payment_status
+                        FROM Payments pay
+                        JOIN Orders o ON pay.order_id = o.order_id
+                        WHERE o.user_id = ? AND o.status != 'cart'
+                        ORDER BY pay.payment_id ASC
+                        """, (session.get('user_id'),)).fetchall()
+    # group items by order_id for easy template rendering
+    items_by_order = {}
+    for it in order_items:
+        items_by_order.setdefault(it['order_id'], []).append(dict(it))
+    payments_by_order = {}
+    for p in payments:
+        payments_by_order.setdefault(p['order_id'], []).append(dict(p))
+    connect.close()
+    return render_template('Accounts.html', accounts=accounts, user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'))
+
+
+@website.route('/signout', methods=['POST'])
+def signout():
+    session.pop('user_id', None)
+    session.pop('full_name', None)
+    # # Also clear any temporary cart when signing out
+    # session.pop('cart', None)
+    return redirect(url_for('home_page'))
 
 if __name__ == "__main__":
    print("\n\033[1;95m- LOADING... -\033[0m\n")

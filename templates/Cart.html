@@ -21,20 +21,48 @@
             <div class="nav-buttons">
                     <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
                     <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
-                    <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                    {% if current_user %}
+                        <a href="{{ url_for('accounts_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>{{ current_user }}</a>
+                    {% else %}
+                        <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                    {% endif %}
                     <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
             </div>
         </nav>
         <div>
             <div>
-                <i class="ri-shopping-bag-3-line"></i>
-                <h2>Your cart is empty</h2>
-                <h3>Add some delicious items to get started!</h3>
-                {% if session.get('user_id') %}
-                    <a href="{{ url_for('menu_page_user', username=session.get('full_name')) }}" class="buy-btn">
-                        <button>Browse Menu</button>
-                    </a>
+                {% if cart_items and cart_items|length > 0 %}
+                    <h2>Your Cart</h2>
+                    <ul class="cart-list">
+                        {% for item in cart_items %}
+                        <li class="cart-item">
+                            <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}" style="height:48px;">
+                            <strong>{{ item.product_name }}</strong>
+                            <div class="cart-controls">
+                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">
+                                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                                    <input type="hidden" name="action" value="update">
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0" style="width:60px;">
+                                    <button type="submit">Update</button>
+                                </form>
+                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">
+                                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                                    <input type="hidden" name="action" value="remove">
+                                    <button type="submit" class="btn-link">Remove</button>
+                                </form>
+                            </div>
+                            <div class="cart-price">&times; {{ item.quantity }} — ${{ "%.2f"|format(item.price) }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <form action="{{ url_for('cart_page') }}" method="post">
+                        <input type="hidden" name="action" value="purchase">
+                        <button type="submit" class="btn-primary">Purchase</button>
+                    </form>
                 {% else %}
+                    <i class="ri-shopping-bag-3-line"></i>
+                    <h2>Your cart is empty</h2>
+                    <h3>Add some delicious items to get started!</h3>
                     <a href="{{ url_for('menu_page') }}" class="buy-btn">
                         <button>Browse Menu</button>
                     </a>

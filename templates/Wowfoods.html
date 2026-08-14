@@ -28,7 +28,11 @@
             <div class="nav-buttons">
                 <a href="{{ url_for('home_page') }}" id="navbutton" class="home"><span class="tabselected">Home</span></a>
                 <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
-                <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                {% if current_user %}
+                    <a href="{{ url_for('accounts_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>{{ current_user }}</a>
+                {% else %}
+                    <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                {% endif %}
                 <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
             </div>
         </nav>
@@ -73,20 +77,18 @@
         <div class="products">
             {% for product in popular %}
             <div class="productcards">
-                <!-- <a href="" class="buy-btn">
-                    <button>+ Add to Cart</button>
-                </a> -->
+                <form action="{{ url_for('cart_page') }}" method="post" class="buy-btn">
+                    <input type="hidden" name="product_id" value="{{ product.product_id }}">
+                    <button type="submit">+ Add to Cart</button>
+                </form>
                 <img src="{{ url_for('static', filename=product.image_url) }}" alt="{{ product.product_name }}">
                 <div class ="productdetails">
                     <div class="productnameprice">
-                        <h3 class="productname" id="details">{{ product.product_name }}</h2>
-                        <h3 class="productprice" id="details">${{ "%.2f"|format(product.price) }}</h2>
+                        <h3 class="productname" id="details">{{ product.product_name }}</h3>
+                        <h3 class="productprice" id="details">${{ "%.2f"|format(product.price) }}</h3>
                     </div>
-                    <h4 class="productcate" id="details">{{ product.category_name }}</h3>
+                    <h4 class="productcate" id="details">{{ product.category_name }}</h4>
                     
-                    <a href="" class="buy-btn">
-                        <button>+ Add to Cart</button>
-                    </a>
                 </div>
             </div>
             {% endfor %}

@@ -29,9 +29,7 @@
         <div class="form-center">
             <div class="form-page">
                 <h2>Welcome, {{ session.get('full_name') }}!</h2>
-                <form action="{{ url_for('signout') }}" method="POST">
-                    <button class="btn-primary" type="submit">Sign Out</button>
-                </form>
+                <p>Visit <a href="{{ url_for('accounts_page') }}">your account</a> to sign out.</p>
             </div>
         </div>
         {% else %}

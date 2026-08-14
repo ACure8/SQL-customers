@@ -22,12 +22,16 @@
             <div class="nav-buttons">
                     <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
                     <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
-                    <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                    {% if current_user %}
+                        <a href="{{ url_for('accounts_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>{{ current_user }}</a>
+                    {% else %}
+                        <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                    {% endif %}
                     <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
             </div>
         </nav>
 <!-- sign out option -->
-        <!-- {% if session.get('user_id') %}
+        {% if session.get('user_id') %}
         <div class="form-center">
             <div class="form-page">
                 <h2>Welcome, {{ session.get('full_name') }}!</h2>
@@ -35,7 +39,36 @@
                     <button class="btn-primary" type="submit">Sign Out</button>
                 </form>
             </div>
-        </div> -->
+        </div>
+        {% endif %}
+        <div class="orders-section">
+            <h3>Your Orders</h3>
+            {% if user_orders and user_orders|length > 0 %}
+                <ul class="orders-list">
+                {% for o in user_orders %}
+                    <li class="order">
+                        <div><strong>Order ID:</strong> {{ o.order_id }}</div>
+                        <div><strong>Date:</strong> {{ o.order_date }}</div>
+                        <div><strong>Total:</strong> ${{ "%.2f"|format(o.total_price if o.total_price else 0.0) }}</div>
+                        <div><strong>Status:</strong> {{ o.status or 'unknown' }}</div>
+                        {% if payments.get(o.order_id) %}
+                            <div><strong>Payment:</strong> {{ payments[o.order_id][0].payment_status }} — ${{ "%.2f"|format(payments[o.order_id][0].amount_paid) }} on {{ payments[o.order_id][0].payment_date }}</div>
+                        {% endif %}
+                        <details>
+                            <summary>Items</summary>
+                            <ul>
+                                {% for item in order_items.get(o.order_id, []) %}
+                                    <li>{{ item.product_name }} &times; {{ item.quantity }} — ${{ "%.2f"|format(item.price_at_purchase) }}</li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>No past orders found.</p>
+            {% endif %}
+        </div>
         
 
 
