@@ -14,6 +14,41 @@ def get_db():
     return conn
 
 
+def _build_cart_dict(items):
+    """Convert order items to session cart format."""
+    cart = {}
+    for it in items:
+        cart[str(it['product_id'])] = {
+            'product_id': it['product_id'],
+            'product_name': it['product_name'],
+            'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
+            'image_url': it['image_url'],
+            'category_name': None,
+            'quantity': it['quantity']
+        }
+    return cart
+
+
+def _update_order_total(c, order_id):
+    """Recalculate and update order total."""
+    total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
+    total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+    c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+    return total
+
+
+# def _sync_persisted_cart_to_session(c, user_id):
+#     """Fetch user's cart order and sync to session."""
+#     order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+#     if order:
+#         items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+#         cart = _build_cart_dict(items)
+#         session['cart'] = cart
+#         session.modified = True
+#         return order['order_id']
+#     return None
+
+
 @website.route('/cart', methods=['GET', 'POST'])
 def cart_page():
     # POST actions: add to cart (product_id) or purchase (action=purchase)
@@ -56,24 +91,12 @@ def cart_page():
                         prod = c.execute("SELECT price FROM Products WHERE product_id = ?", (product_id,)).fetchone()
                         price = float(prod['price']) if prod and prod['price'] is not None else 0.0
                         c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
-                # recompute total and update session cart
-                total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
-                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
-                c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                # recompute total and sync to session
+                _update_order_total(c, order_id)
                 items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
                 connect.close()
-
-                cart = {}
-                for it in items:
-                    cart[str(it['product_id'])] = {
-                        'product_id': it['product_id'],
-                        'product_name': it['product_name'],
-                        'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
-                        'image_url': it['image_url'],
-                        'category_name': None,
-                        'quantity': it['quantity']
-                    }
+                cart = _build_cart_dict(items)
                 session['cart'] = cart
                 session.modified = True
                 return redirect(request.referrer or url_for('cart_page'))
@@ -115,23 +138,12 @@ def cart_page():
                 if order:
                     order_id = order['order_id']
                     c.execute("DELETE FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id))
-                    total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
-                    total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
-                    c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                    _update_order_total(c, order_id)
                     items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                     connect.commit()
                     connect.close()
 
-                    cart = {}
-                    for it in items:
-                        cart[str(it['product_id'])] = {
-                            'product_id': it['product_id'],
-                            'product_name': it['product_name'],
-                            'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
-                            'image_url': it['image_url'],
-                            'category_name': None,
-                            'quantity': it['quantity']
-                        }
+                    cart = _build_cart_dict(items)
                     session['cart'] = cart
                     session.modified = True
                     return redirect(request.referrer or url_for('cart_page'))
@@ -187,25 +199,14 @@ def cart_page():
                               (order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
 
                 # recompute order total
-                total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
-                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
-                c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
+                _update_order_total(c, order_id)
 
                 # fetch order items to mirror session cart for UI
                 items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
                 connect.close()
 
-                cart = {}
-                for it in items:
-                    cart[str(it['product_id'])] = {
-                        'product_id': it['product_id'],
-                        'product_name': it['product_name'],
-                        'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
-                        'image_url': it['image_url'],
-                        'category_name': None,
-                        'quantity': it['quantity']
-                    }
+                cart = _build_cart_dict(items)
                 session['cart'] = cart
                 session.modified = True
                 return redirect(request.referrer or url_for('menu_page'))
@@ -515,6 +516,48 @@ def signout():
     # # Also clear any temporary cart when signing out
     # session.pop('cart', None)
     return redirect(url_for('home_page'))
+
+
+# Error Handlers
+@website.errorhandler(404)
+def handle_404(error):
+    return render_template('Error.html',
+                           error_code=404,
+                           error_title='Page Not Found',
+                           error_message='Sorry, the page you\'re looking for doesn\'t exist.',
+                           error_details='The URL might be incorrect or the page may have been removed.',
+                           current_user=session.get('full_name')), 404
+
+
+@website.errorhandler(500)
+def handle_500(error):
+    return render_template('Error.html',
+                           error_code=500,
+                           error_title='Server Error',
+                           error_message='Oops! Something went wrong on our end.',
+                           error_details='Our team has been notified. Please try again later.',
+                           current_user=session.get('full_name')), 500
+
+
+@website.errorhandler(403)
+def handle_403(error):
+    return render_template('Error.html',
+                           error_code=403,
+                           error_title='Access Forbidden',
+                           error_message='You don\'t have permission to access this resource.',
+                           error_details='If you believe this is a mistake, please contact support.',
+                           current_user=session.get('full_name')), 403
+
+
+@website.errorhandler(400)
+def handle_400(error):
+    return render_template('Error.html',
+                           error_code=400,
+                           error_title='Bad Request',
+                           error_message='The request could not be understood by the server.',
+                           error_details='Please check your input and try again.',
+                           current_user=session.get('full_name')), 400
+
 
 if __name__ == "__main__":
    print("\n\033[1;95m- LOADING... -\033[0m\n")
