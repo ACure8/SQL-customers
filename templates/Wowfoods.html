@@ -79,7 +79,7 @@
             <div class="productcards">
                 <form action="{{ url_for('cart_page') }}" method="post" class="buy-btn">
                     <input type="hidden" name="product_id" value="{{ product.product_id }}">
-                    <button type="submit">+ Add to Cart</button>
+                    <button type="submit">Buy</button>
                 </form>
                 <img src="{{ url_for('static', filename=product.image_url) }}" alt="{{ product.product_name }}">
                 <div class ="productdetails">

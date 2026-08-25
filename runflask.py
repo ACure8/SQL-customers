@@ -14,17 +14,6 @@ def get_db():
     return conn
 
 
-def get_next_id(cursor, table_name, id_column):
-    max_row = cursor.execute(f"SELECT MAX({id_column}) AS m FROM {table_name}").fetchone()
-    if not max_row:
-        return 1
-    if isinstance(max_row, sqlite3.Row):
-        current_max = max_row['m']
-    else:
-        current_max = max_row[0]
-    return (current_max if current_max is not None else 0) + 1
-
-
 @website.route('/cart', methods=['GET', 'POST'])
 def cart_page():
     # POST actions: add to cart (product_id) or purchase (action=purchase)
@@ -66,9 +55,7 @@ def cart_page():
                     else:
                         prod = c.execute("SELECT price FROM Products WHERE product_id = ?", (product_id,)).fetchone()
                         price = float(prod['price']) if prod and prod['price'] is not None else 0.0
-                        next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
-                        c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
-                                  (next_order_item_id, order_id, product_id, qty, price))
+                        c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
                 # recompute total and update session cart
                 total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
                 total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
@@ -196,9 +183,8 @@ def cart_page():
                     new_qty = existing['quantity'] + 1
                     c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (new_qty, existing['order_item_id']))
                 else:
-                    next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
-                    c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
-                              (next_order_item_id, order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
+                    c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)",
+                              (order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
 
                 # recompute order total
                 total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
@@ -294,9 +280,7 @@ def cart_page():
                 product_id = item['product_id']
                 qty = int(item.get('quantity', 1))
                 price = float(item.get('price', 0.0))
-                next_order_item_id = get_next_id(c, "Order_Items", "order_item_id")
-                c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
-                          (next_order_item_id, order_id, product_id, qty, price))
+                c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
             # record payment as Paid
             pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
             next_pay_id = (pay_row['m'] if pay_row and pay_row['m'] is not None else 0) + 1
@@ -341,7 +325,44 @@ def signin_page():
     formdata = {}
     if request.method == 'POST':
         formdata = {k: v for k, v in request.form.items()}
-        email = request.form.get('email')
+
+        if request.form.get('full_name'):
+            full_name = request.form.get('full_name', '').strip()
+            email = request.form.get('email', '').strip().lower()
+            password = request.form.get('password', '')
+            confirm_password = request.form.get('confirm_password', '')
+            date_of_birth = request.form.get('date_of_birth')
+            wants_offers = 1 if request.form.get('wants_offers') else 0
+
+            if password != confirm_password:
+                error = 'Passwords do not match'
+            elif len(password) < 8:
+                error = 'Password must be at least 8 characters long'
+            else:
+                connect = get_db()
+                c = connect.cursor()
+                existing = c.execute("SELECT user_id FROM Users WHERE email = ? LIMIT 1", (email,)).fetchone()
+                if existing:
+                    error = 'An account with that email already exists'
+                else:
+                    next_id = c.execute("SELECT COALESCE(MAX(user_id), 0) + 1 FROM Users").fetchone()[0]
+                    c.execute("""
+                        INSERT INTO Users
+                            (user_id, full_name, email, password_hash, date_of_birth, wants_offers, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """, (next_id, full_name, email, generate_password_hash(password),
+                               date_of_birth, wants_offers,
+                               datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')))
+                    connect.commit()
+                    connect.close()
+                    return redirect(url_for('signin_page'))
+                connect.close()
+
+        if error:
+            return render_template('Signin.html', users=[], error=error, formdata=formdata,
+                                   current_user=session.get('full_name'))
+
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password')
 
         connect = get_db()
@@ -355,9 +376,9 @@ def signin_page():
         connect.close()
 
         if user:
-            # verify password if column exists; otherwise accept plain match
+            # Verify the password hash stored by the Users schema.
             try:
-                stored = user['password']
+                stored = user['password_hash']
             except Exception:
                 stored = None
 

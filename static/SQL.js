@@ -1,4 +1,5 @@
 function showSignup() {
+  document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
   var signup = document.getElementById('signupForm');
   var forgot = document.getElementById('forgotForm');
@@ -11,6 +12,7 @@ function showSignup() {
 }
 
 function showSignin() {
+  document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
   var signup = document.getElementById('signupForm');
   var forgot = document.getElementById('forgotForm');
@@ -23,6 +25,7 @@ function showSignin() {
 }
 
 function showForgotPassword() {
+  document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
   var signup = document.getElementById('signupForm');
   var forgot = document.getElementById('forgotForm');

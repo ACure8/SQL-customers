@@ -14,6 +14,14 @@ html,body{
     color:var(--text);
 }
 
+body.signin-page:not(.interactive) .form-page .signinup,
+body.signin-page:not(.interactive) .form-page .form-container,
+body.signin-page:not(.interactive) .form-page .signup,
+body.signin-page:not(.interactive) .form-page .signin {
+    animation: none;
+    transition: none;
+}
+
 .night-lightmode{
     position: absolute;
     background: var(--card);
@@ -450,21 +458,13 @@ header{
 }
 
 .buy-btn{
-    /* transform: translateY(0); */
-    /* transition: transform 0.3s ease; */
-    pointer-events: none;
+    pointer-events: auto;
     display: flex;
     justify-content: center;
     align-items: center;
     text-decoration: none;
     margin: auto 0 20px 0;
 }
-
-.productcards:hover .buy-btn {
-    /* transform: translateY(6rem); */
-    pointer-events: auto;
-}
-
 
 .form-center{
     justify-content: center; 
@@ -477,7 +477,11 @@ header{
 .form-page {
     max-width: clamp(20rem, 40vw, 40vw);
     align-items: center;
-    height: 29rem;
+    height: auto;
+}
+
+body:has(.signup.active) .form-container.active {
+    margin-bottom: 5%;
 }
 
 .signinup{
@@ -488,7 +492,37 @@ header{
     max-width: clamp(20rem, 40vw, 40vw);
     margin: 2rem auto;
     justify-content: space-evenly;
-    
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(10rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-10rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+body:has(.signup.active) .signinup {
+    animation: slide-up 0.35s ease both;
+}
+
+body:has(.signin.active) .signinup {
+    animation: slide-down 0.35s ease both;
 }
 
 .signup, .signin{
@@ -501,7 +535,7 @@ header{
     font: bold 16px sans-serif;
     color: #000;
     transform: translateY(0px);
-    transition: transform 0.2s ease;
+    transition: transform 0.35s ease, background-color 0.35s ease, color 0.35s ease;
 }
 
 .signup:hover, .signin:hover{
@@ -573,8 +607,36 @@ header{
 
 .form-container.active {
     display: flex;
-    animation: fadeIn 0.6s ease;
+    animation: form-slide-in-left 0.6s ease both;
 }
+
+/* Slide the newly selected form in from the direction of its tab. */
+body:has(.signin.active) .form-container.active {
+    animation-name: form-slide-in-right;
+}
+
+@keyframes form-slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-3rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes form-slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(3rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 
 /* details {
     display: flex;
@@ -586,4 +648,5 @@ footer{
     background-color: #14134b;
     color: #fff;
     height: 100px;
+    
 }

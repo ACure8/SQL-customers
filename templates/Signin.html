@@ -9,7 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
     <title>Wow Foods</title>
 </head>
-    <body>
+    <body class="signin-page">
         <nav class = "nav">
             <a href="{{ url_for('home_page') }}">
                 <img id="logo" src="{{ url_for('static', filename='logos/white w logo.png') }}" alt="wowfoods-logo">
@@ -40,7 +40,10 @@
                     <a href="#" class="signin active" id="signin" onclick="showSignin()">Sign in</a>
                 </div>
                 <div class="form-container active" id="loginForm"> 
-                    <form id="loginFormSubmit" action="{{ url_for('accounts_page') }}" method="POST" autocomplete="on">
+                    <form id="loginFormSubmit" action="{{ url_for('signin_page') }}" method="POST" autocomplete="on">
+                        {% if error %}
+                            <p class="error-message">{{ error }}</p>
+                        {% endif %}
                         <div class="form-group">
                             <input type="email"
                                 class="form-control"
@@ -67,7 +70,7 @@
                 </div>
                 <div class="form-container" id="signupForm">
                 
-                    <form id="signupFormSubmit" action="{{ url_for('accounts_page') }}" method="POST" autocomplete="on">
+                    <form id="signupFormSubmit" action="{{ url_for('signin_page') }}" method="POST" autocomplete="on">
                         <div class="form-group">
                             <input type="text" class="form-control" name="full_name" autocomplete="name" placeholder="Full Name" required>
                         </div>
@@ -103,7 +106,7 @@
                     </form>
                 </div>
                 <div class="form-container" id="forgotForm">
-                    <form id="forgotFormSubmit" action="{{ url_for('accounts_page') }}" method="POST">
+                    <form id="forgotFormSubmit" action="{{ url_for('signin_page') }}" method="POST">
                         <div class="form-group">
                             <input type="email" class="form-control" name="forgot_email" placeholder="Email Address" required>
                         </div>
