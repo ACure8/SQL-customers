@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="{{ url_for('static', filename='logos/white_w/2.png') }}">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Cart.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
     <title>Wow Foods</title>
 </head>
@@ -32,17 +32,23 @@
         <div>
             <div>
                 {% if cart_items and cart_items|length > 0 %}
-                    <h2>Your Cart</h2>
+                    <div class="main">
+                        <div class="mbgcolor">
+                            <h1>
+                                Menu
+                            </h1>
+                        </div>
+                    </div>
                     <ul class="cart-list">
                         {% for item in cart_items %}
                         <li class="cart-item">
-                            <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}" style="height:48px;">
+                            <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}">
                             <strong>{{ item.product_name }}</strong>
                             <div class="cart-controls">
                                 <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">
                                     <input type="hidden" name="product_id" value="{{ item.product_id }}">
                                     <input type="hidden" name="action" value="update">
-                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0" style="width:60px;">
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0">
                                     <button type="submit">Update</button>
                                 </form>
                                 <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">

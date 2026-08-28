@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link rel="icon" href="{{ url_for('static', filename='logos/white_w/2.png') }}">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Menu.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
     <title>Wow Foods</title>
 </head>
@@ -50,10 +50,6 @@
         <div class="products">
             {% for product in products %}
             <div class="productcards">
-                <form action="{{ url_for('cart_page') }}" method="post" class="buy-btn">
-                    <input type="hidden" name="product_id" value="{{ product.product_id }}">
-                    <button type="submit">Buy</button>
-                </form>
                 <img src="{{ url_for('static', filename=product.image_url) }}" alt="{{ product.product_name }}">
                 <div class ="productdetails">
                     <div class="productnameprice">
@@ -61,6 +57,10 @@
                         <h3 class="productprice" id="details">${{ "%.2f"|format(product.price) }}</h3>
                     </div>
                     <h4 class="productcate" id="details">{{ product.category_name }}</h4>
+                    <form action="{{ url_for('cart_page') }}" method="post" class="buy-btn">
+                        <input type="hidden" name="product_id" value="{{ product.product_id }}">
+                        <button type="submit">Buy</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}

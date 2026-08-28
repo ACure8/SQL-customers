@@ -1,0 +1,325 @@
+:root {
+  --bg: white;
+  --card: white;
+  --text: black;
+  --nav: white;
+  --hover: #d1d1d1;
+  --maincolour: #36bd18;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav {
+  margin: 0 auto;
+  padding: 1rem 3rem;
+  max-width: 90vw;
+  background: var(--nav);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+}
+
+#logo {
+  height: 3rem;
+  width: auto;
+  vertical-align: middle;
+}
+
+.nav-buttons {
+  display: flex;
+  text-align: right;
+  visibility: visible;
+}
+
+#navbutton {
+  margin-right: 1rem;
+  color: inherit;
+  text-decoration: none;
+  padding: 0.5rem 0.8rem;
+  border: #ffffff00 2px solid;
+  color: var(--text);
+  font: bold 1rem sans-serif;
+}
+
+#navbutton:hover {
+  content: "";
+  text-decoration: underline;
+  border-radius: 5px;
+  background-color: var(--hover);
+  transition: background-color 0.5s ease;
+}
+
+#navbutton:not(:hover) {
+  content: "";
+  text-decoration: none;
+  border-radius: 5px;
+  background-color: var(--nav);
+  transition: background-color 0.5s ease;
+}
+
+.tabselected {
+  color: rgb(45, 178, 19);
+}
+
+.calltoaction {
+  border-radius: 5px;
+  background-color: var(--card);
+  filter: brightness(0.9);
+  transition:
+    filter 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.calltoaction:hover {
+  filter: brightness(0.88);
+}
+
+#navi {
+  margin-right: 4px;
+}
+
+.contentbar {
+  display: none;
+  visibility: hidden;
+}
+
+@media only screen and (max-width: 700px) {
+  .nav-buttons {
+    display: none;
+    visibility: hidden;
+  }
+  .contentbar {
+    display: block;
+    visibility: visible;
+  }
+}
+
+.mbgcolor {
+  background-color: chartreuse;
+  font-size: clamp(20px, 2vw, 30px);
+  height: 6rem;
+  width: auto;
+  margin: 0rem 0rem;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 200, 78, 100),
+    rgba(0, 163, 0, 100)
+  );
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  grid-template-columns: auto;
+  color: #ffffff;
+}
+
+.products {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0;
+  max-width: 100%;
+  transition:
+    gap 0.6s ease,
+    margin 0.6s ease;
+}
+
+.categorylist {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 2rem 0;
+  max-width: 100%;
+  transition:
+    gap 0.6s ease;
+}
+
+.categorylist.move {
+  justify-content: space-evenly;
+  align-items: center;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 1.5rem;
+  margin: 2rem 15px;
+}
+
+.categorylist ~ .products .productcards {
+  display: flex;
+  opacity: 0;
+  transform: translateY(4rem);
+  transition:
+    transform 0.8s ease,
+    opacity 1s ease;
+  pointer-events: none;
+}
+
+.categorylist.move ~ .products .productcards {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.categorycard {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  margin: 0.5rem 0;
+  height: 10rem;
+  width: 15rem;
+  flex: 0 0 15rem;
+  background-color: rgb(146, 146, 146);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 1.5px 6px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition:
+    height 0.6s ease,
+    width 0.6s ease,
+    margin 0.6s ease,
+    flex-basis 0.6s ease,
+    transform 0.6s ease;
+}
+
+.categorycard.move {
+  height: 7rem;
+  width: 9rem;
+  margin: 0.5rem 0.25rem;
+  flex: 0 0 9rem;
+}
+
+.categorycard.move.selected {
+  outline: 3px solid var(--maincolour);
+  outline-offset: 2px;
+  transform: translateY(-3px);
+}
+
+.categorycard.move .categoryname {
+  font: bold 0.8rem sans-serif;
+  transition: font-size 0.6s ease;
+}
+
+.categoryname {
+  color: var(--text);
+  background-color: rgb(202, 201, 201);
+  padding: 0.5rem 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font: bold 1.1rem sans-serif;
+}
+
+@media (max-width: 760px) {
+  .products {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .productcard {
+    width: 90vw;
+    max-width: 20rem;
+    margin: 0.5rem 0;
+  }
+}
+
+.productcards {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  height: 22rem;
+  width: 15rem;
+  background-color: rgb(184, 184, 184);
+  border-radius: 10px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 1.5px 6px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.productdetails {
+  color: var(--text);
+  background-color: white;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 0 0 12rem;
+  overflow: hidden;
+  font: bold 14px sans-serif;
+}
+
+.productnameprice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0rem 0rem;
+}
+
+#details {
+  padding: 0rem 1rem;
+  margin: 0.15rem 0;
+  display: flex;
+}
+
+.productname {
+  max-width: 70%;
+}
+
+.productprice {
+  font-size: 1.1rem;
+  color: rgb(45, 178, 19);
+}
+
+/* .producttags{
+    border-radius: 15px;
+    background-color: rgb(45, 178, 19);
+}   do this when you seperate all the tags from each other*/
+
+/* .producttags:hover{
+    .producttagsdesc{
+        display: visible;
+    }
+    
+} planned to make a box(with description) that pops up when hovering on certain tags*/
+
+.buy-btn button {
+  cursor: pointer;
+  text-decoration: none;
+  padding: 10px 20px;
+  border: 1px solid #000000;
+  background: #000000;
+  width: 90%; /*for when the button is in the card and not sliding down*/
+  color: #fff;
+  /* box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30),
+        0 15px 12px rgba(0, 0, 0, 0.22); */
+  border-radius: 10px;
+}
+
+.buy-btn {
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  margin: auto 0 20px 0;
+}
