@@ -102,6 +102,24 @@ body {
   }
 }
 
+.bgcolor {
+  background-color: chartreuse;
+  font-size: clamp(20px, 2vw, 30px);
+  height: 6rem;
+  width: auto;
+  margin: 0rem 0rem;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 200, 78, 100),
+    rgba(0, 163, 0, 100)
+  );
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  grid-template-columns: auto;
+  color: #ffffff;
+}
+
 .buy-btn button {
   cursor: pointer;
   text-decoration: none;

@@ -102,7 +102,7 @@ body {
   }
 }
 
-.mbgcolor {
+.bgcolor {
   background-color: chartreuse;
   font-size: clamp(20px, 2vw, 30px);
   height: 6rem;
