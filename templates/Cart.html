@@ -31,14 +31,14 @@
         </nav>
         <div>
             <div>
-                {% if cart_items and cart_items|length > 0 %}
-                    <div>
-                        <div class="bgcolor">
-                            <h1>
-                                Your Cart
-                            </h1>
-                        </div>
+                <div>
+                    <div class="bgcolor">
+                        <h1>
+                            Your Cart
+                        </h1>
                     </div>
+                </div>
+                {% if cart_items and cart_items|length > 0 %}
                     <ul class="cart-list">
                         {% for item in cart_items %}
                         <li class="cart-item">
@@ -66,12 +66,12 @@
                         <button type="submit" class="btn-primary">Purchase</button>
                     </form>
                 {% else %}
-                    <i class="ri-shopping-bag-3-line"></i>
-                    <h2>Your cart is empty</h2>
-                    <h3>Add some delicious items to get started!</h3>
-                    <a href="{{ url_for('menu_page') }}" class="buy-btn">
-                        <button>Browse Menu</button>
-                    </a>
+                    <div class="empty-cart">
+                        <i class="ri-shopping-bag-3-line empty-cart-icon"></i>
+                        <h2>Your cart is empty</h2>
+                        <h3>Add some delicious items to get started!</h3>
+                        <a href="{{ url_for('menu_page') }}" class="buy-btn">Browse Menu</a>
+                    </div>
                 {% endif %}
             </div>
         </div>

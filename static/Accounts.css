@@ -108,6 +108,11 @@ body {
   display: flex;
   height: 80vh;
   flex-direction: column;
+  background-image: url("../static/images/background.svg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 .form-page {
