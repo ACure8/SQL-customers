@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
@@ -71,13 +71,17 @@ def cart_page():
             except Exception:
                 qty = 1
 
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
             user_id = session.get('user_id')
+            item_price = 0.0
             if user_id:
                 connect = get_db()
                 c = connect.cursor()
                 order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
                 if not order:
                     connect.close()
+                    if is_ajax:
+                        return jsonify({'status': 'error', 'message': 'Cart not found'})
                     return redirect(request.referrer or url_for('cart_page'))
                 order_id = order['order_id']
                 existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id)).fetchone()
@@ -90,8 +94,8 @@ def cart_page():
                     else:
                         prod = c.execute("SELECT price FROM Products WHERE product_id = ?", (product_id,)).fetchone()
                         price = float(prod['price']) if prod and prod['price'] is not None else 0.0
+                        item_price = price
                         c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
-                # recompute total and sync to session
                 _update_order_total(c, order_id)
                 items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
@@ -99,6 +103,10 @@ def cart_page():
                 cart = _build_cart_dict(items)
                 session['cart'] = cart
                 session.modified = True
+                if is_ajax:
+                    current_item = cart.get(str(product_id), {})
+                    item_price = float(current_item.get('price', 0.0))
+                    return jsonify({'status': 'ok', 'quantity': qty, 'product_id': product_id, 'item_total': float(qty) * item_price, 'cart_total': sum(float(v.get('price', 0.0)) * int(v.get('quantity', 0)) for v in cart.values())})
                 return redirect(request.referrer or url_for('cart_page'))
 
             # guest session cart
@@ -108,28 +116,32 @@ def cart_page():
                 cart.pop(key, None)
             else:
                 if key in cart:
+                    item_price = float(cart[key].get('price', 0.0))
                     cart[key]['quantity'] = qty
                 else:
-                    # attempt to fetch product metadata to insert
                     connect = get_db()
                     c = connect.cursor()
                     prod = c.execute("SELECT product_id, product_name, price, image_url, category_id FROM Products WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
                     connect.close()
                     if prod:
+                        item_price = float(prod['price']) if prod['price'] is not None else 0.0
                         cart[key] = {
                             'product_id': prod['product_id'],
                             'product_name': prod['product_name'],
-                            'price': float(prod['price']) if prod['price'] is not None else 0.0,
+                            'price': item_price,
                             'image_url': prod['image_url'],
                             'category_name': None,
                             'quantity': qty
                         }
             session['cart'] = cart
             session.modified = True
+            if is_ajax:
+                return jsonify({'status': 'ok', 'quantity': qty, 'product_id': product_id, 'item_total': float(qty) * item_price, 'cart_total': sum(float(v.get('price', 0.0)) * int(v.get('quantity', 0)) for v in cart.values())})
             return redirect(request.referrer or url_for('cart_page'))
 
         # Remove item from cart
         if action == 'remove' and product_id:
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
             user_id = session.get('user_id')
             if user_id:
                 connect = get_db()
@@ -146,8 +158,12 @@ def cart_page():
                     cart = _build_cart_dict(items)
                     session['cart'] = cart
                     session.modified = True
+                    if is_ajax:
+                        return jsonify({'status': 'ok', 'removed': True, 'cart_total': sum(float(v.get('price', 0.0)) * int(v.get('quantity', 0)) for v in cart.values())})
                     return redirect(request.referrer or url_for('cart_page'))
                 connect.close()
+                if is_ajax:
+                    return jsonify({'status': 'ok', 'removed': True})
                 return redirect(request.referrer or url_for('cart_page'))
 
             # guest
@@ -155,6 +171,8 @@ def cart_page():
             cart.pop(str(product_id), None)
             session['cart'] = cart
             session.modified = True
+            if is_ajax:
+                return jsonify({'status': 'ok', 'removed': True, 'cart_total': sum(float(v.get('price', 0.0)) * int(v.get('quantity', 0)) for v in cart.values())})
             return redirect(request.referrer or url_for('cart_page'))
 
         # Add to cart (default)
@@ -314,7 +332,8 @@ def cart_page():
         if session.get('cart'):
             cart_items = list(session.get('cart', {}).values())
 
-    return render_template('Cart.html', cart_items=cart_items, current_user=session.get('full_name'))
+    cart_total = sum(float(item.get('price', 0.0)) * int(item.get('quantity', 0)) for item in cart_items)
+    return render_template('Cart.html', cart_items=cart_items, cart_total=cart_total, current_user=session.get('full_name'))
 
 @website.route("/signin", methods=["GET", "POST"])
 def signin_page():

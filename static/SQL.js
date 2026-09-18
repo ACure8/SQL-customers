@@ -102,3 +102,120 @@ function movecategories(clickedEl) {
     track.append(clone);
   });
 })();
+
+function initializeCartPage() {
+  const updateCartTotal = () => {
+    const items = document.querySelectorAll('.cart-item');
+    let total = 0;
+
+    items.forEach((item) => {
+      const price = Number(item.dataset.price || 0);
+      const quantity = Number(item.querySelector('.qty-input')?.value || 0);
+      const lineTotal = price * quantity;
+      total += lineTotal;
+
+      const totalEl = item.querySelector('.item-total');
+      if (totalEl) {
+        totalEl.textContent = `$${lineTotal.toFixed(2)}`;
+      }
+    });
+
+    const totalEl = document.querySelector('.cart-total');
+    if (totalEl) {
+      totalEl.textContent = `$${total.toFixed(2)}`;
+    }
+  };
+
+  const sendQuantityUpdate = async (productId, quantity) => {
+    const formData = new URLSearchParams({
+      product_id: productId,
+      action: 'update',
+      quantity: String(quantity)
+    });
+
+    const response = await fetch('/cart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: formData.toString()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update cart');
+    }
+
+    return response.json();
+  };
+
+  const stepperButtons = document.querySelectorAll('.qty-btn');
+  stepperButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const stepper = button.closest('.qty-stepper');
+      const input = stepper?.querySelector('.qty-input');
+      const item = button.closest('.cart-item');
+      if (!stepper || !input || !item) return;
+
+      const productId = item.dataset.productId;
+      const currentValue = Number(input.value || 0);
+      const nextValue = button.dataset.action === 'increase' ? currentValue + 1 : Math.max(0, currentValue - 1);
+      input.value = nextValue;
+
+      try {
+        const result = await sendQuantityUpdate(productId, nextValue);
+        if (result?.status === 'ok' && nextValue === 0) {
+          item.remove();
+        }
+        updateCartTotal();
+      } catch (error) {
+        console.error(error);
+        input.value = currentValue;
+      }
+    });
+  });
+
+  const inputs = document.querySelectorAll('.qty-input');
+  inputs.forEach((input) => {
+    input.addEventListener('change', async () => {
+      const item = input.closest('.cart-item');
+      if (!item) return;
+
+      const productId = item.dataset.productId;
+      const previousValue = Number(item.dataset.previousQuantity || input.value || 0);
+      const nextValue = Math.max(0, Number(input.value || 0));
+      input.value = nextValue;
+      item.dataset.previousQuantity = String(nextValue);
+
+      try {
+        const result = await sendQuantityUpdate(productId, nextValue);
+        if (result?.status === 'ok' && nextValue === 0) {
+          item.remove();
+        }
+        updateCartTotal();
+      } catch (error) {
+        console.error(error);
+        input.value = previousValue;
+      }
+    });
+  });
+
+  document.querySelectorAll('.remove-form').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      const item = form.closest('.cart-item');
+      if (!item) return;
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+    });
+  });
+
+  updateCartTotal();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.querySelector('.cart-item')) {
+    initializeCartPage();
+  }
+});

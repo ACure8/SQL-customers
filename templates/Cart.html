@@ -41,26 +41,33 @@
                 {% if cart_items and cart_items|length > 0 %}
                     <ul class="cart-list">
                         {% for item in cart_items %}
-                        <li class="cart-item">
+                        <li class="cart-item" data-product-id="{{ item.product_id }}" data-price="{{ item.price }}">
                             <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}">
                             <strong>{{ item.product_name }}</strong>
                             <div class="cart-controls">
-                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">
-                                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                                    <input type="hidden" name="action" value="update">
-                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0">
-                                    <button type="submit">Update</button>
-                                </form>
-                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form">
+                                <div class="qty-stepper" aria-label="Quantity selector for {{ item.product_name }}">
+                                    <button type="button" class="qty-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
+                                    <input type="number" class="qty-input" value="{{ item.quantity }}" min="0" step="1" aria-label="Quantity for {{ item.product_name }}">
+                                    <button type="button" class="qty-btn" data-action="increase" aria-label="Increase quantity">+</button>
+                                </div>
+                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form remove-form">
                                     <input type="hidden" name="product_id" value="{{ item.product_id }}">
                                     <input type="hidden" name="action" value="remove">
                                     <button type="submit" class="btn-link">Remove</button>
                                 </form>
                             </div>
-                            <div class="cart-price">&times; {{ item.quantity }} — ${{ "%.2f"|format(item.price) }}</div>
+                            <div class="cart-price">
+                                <span class="item-total">${{ "%.2f"|format(item.price * item.quantity) }}</span>
+                            </div>
                         </li>
                         {% endfor %}
                     </ul>
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <strong class="cart-total">${{ "%.2f"|format(cart_total) }}</strong>
+                        </div>
+                    </div>
                     <form action="{{ url_for('cart_page') }}" method="post">
                         <input type="hidden" name="action" value="purchase">
                         <button type="submit" class="btn-primary">Purchase</button>
@@ -75,5 +82,6 @@
                 {% endif %}
             </div>
         </div>
+    <script src="{{ url_for('static', filename='SQL.js') }}"></script>
     </body>
 </html>
