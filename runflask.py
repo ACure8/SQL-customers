@@ -37,16 +37,16 @@ def _update_order_total(c, order_id):
     return total
 
 
-# def _sync_persisted_cart_to_session(c, user_id):
-#     """Fetch user's cart order and sync to session."""
-#     order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
-#     if order:
-#         items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
-#         cart = _build_cart_dict(items)
-#         session['cart'] = cart
-#         session.modified = True
-#         return order['order_id']
-#     return None
+def _sync_persisted_cart_to_session(c, user_id):
+    """Fetch user's cart order and sync to session."""
+    order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
+    if order:
+        items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+        cart = _build_cart_dict(items)
+        session['cart'] = cart
+        session.modified = True
+        return order['order_id']
+    return None
 
 
 @website.route('/cart', methods=['GET', 'POST'])

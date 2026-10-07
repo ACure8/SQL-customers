@@ -39,7 +39,7 @@
                 <details class="delete-account">
                     <summary>Delete account</summary>
                     <form action="{{ url_for('delete_account') }}" method="POST">
-                        <p>Are you sure? This permanently deletes your account and order history.</p>
+                        <p><strong>Are you sure? This permanently deletes your account and order history.</strong></p>
                         {% if delete_error == 'password' %}
                             <p class="delete-error" role="alert">Your password was incorrect. Please try again.</p>
                         {% elif delete_error == 'confirmation' %}
