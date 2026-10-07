@@ -36,6 +36,24 @@
                 <form action="{{ url_for('signout') }}" method="POST">
                     <button class="btn-primary" type="submit">Sign Out</button>
                 </form>
+                <details class="delete-account">
+                    <summary>Delete account</summary>
+                    <form action="{{ url_for('delete_account') }}" method="POST">
+                        <p>Are you sure? This permanently deletes your account and order history.</p>
+                        {% if delete_error == 'password' %}
+                            <p class="delete-error" role="alert">Your password was incorrect. Please try again.</p>
+                        {% elif delete_error == 'confirmation' %}
+                            <p class="delete-error" role="alert">Confirm that you understand this action cannot be undone.</p>
+                        {% endif %}
+                        <label for="delete-password">Write your password</label>
+                        <input id="delete-password" name="password" type="password" autocomplete="current-password" placeholder="Write your password" required>
+                        <label class="delete-confirmation">
+                            <input type="checkbox" name="confirm_delete" value="yes" required>
+                            I understand this cannot be undone.
+                        </label>
+                        <button class="btn-delete" type="submit">Permanently delete account</button>
+                    </form>
+                </details>
             </div>
         </div>
         {% endif %}
@@ -72,12 +90,12 @@
 
         <footer>
             <div class="footer-content">
-                <div class="footer-brand">
+                <div class="footerparts">
                     <h3>Wowfoods</h3>
                     <p>Delicious, healthy food delivered to your door. Quality you can always trust.</p>
                 </div>
 
-                <div class="footer-links">
+                <div class="footerparts">
                     <h4>Quick Links</h4>
                     <ul>
                         <li>Home</li>
@@ -87,7 +105,7 @@
                     </ul>
                 </div>
 
-                <div class="footer-links">
+                <div class="footerparts">
                     <h4>Support</h4>
                     <ul>
                         <li>Contact Us</li>
@@ -97,7 +115,7 @@
                     </ul>
                 </div>
 
-                <div class="footer-contact">
+                <div class="footerparts">
                     <h4>Contact</h4>
                     <p><a href="mailto:support@wowfoods.com">support@wowfoods.com</a></p>
                     <p>Available 24/7 for support</p>

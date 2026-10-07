@@ -525,7 +525,49 @@ def accounts_page():
     for p in payments:
         payments_by_order.setdefault(p['order_id'], []).append(dict(p))
     connect.close()
-    return render_template('Accounts.html', accounts=accounts, user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'))
+    return render_template('Accounts.html', accounts=accounts, user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'), delete_error=request.args.get('delete_error'))
+
+
+@website.route('/delete-account', methods=['POST'])
+def delete_account():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('signin_page'))
+
+    if request.form.get('confirm_delete') != 'yes':
+        return redirect(url_for('accounts_page', delete_error='confirmation'))
+
+    password = request.form.get('password', '')
+    connect = get_db()
+    c = connect.cursor()
+    user = c.execute("SELECT password_hash FROM Users WHERE user_id = ?", (user_id,)).fetchone()
+    if not user or not password:
+        connect.close()
+        return redirect(url_for('accounts_page', delete_error='password'))
+
+    stored_password = user['password_hash']
+    try:
+        password_matches = check_password_hash(stored_password, password)
+    except (TypeError, ValueError):
+        password_matches = stored_password == password
+
+    if not password_matches:
+        connect.close()
+        return redirect(url_for('accounts_page', delete_error='password'))
+
+    try:
+        c.execute("DELETE FROM Payments WHERE order_id IN (SELECT order_id FROM Orders WHERE user_id = ?)", (user_id,))
+        c.execute("DELETE FROM Order_Items WHERE order_id IN (SELECT order_id FROM Orders WHERE user_id = ?)", (user_id,))
+        c.execute("DELETE FROM Orders WHERE user_id = ?", (user_id,))
+        c.execute("DELETE FROM Users WHERE user_id = ?", (user_id,))
+        connect.commit()
+    except sqlite3.Error:
+        connect.rollback()
+        connect.close()
+        raise
+    connect.close()
+    session.clear()
+    return redirect(url_for('home_page'))
 
 
 @website.route('/signout', methods=['POST'])
