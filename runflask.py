@@ -2,10 +2,21 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
 
 website = Flask(__name__, template_folder="templates", static_folder="static")
 website.secret_key = "****"
 DB_PATH = "wowfoodsnew.db"
+DELIVERY_FEE = Decimal("2.00")
+TAX_RATE = Decimal("0.15")
+
+
+def _calculate_checkout_totals(subtotal):
+    subtotal = Decimal(str(subtotal)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    delivery_fee = DELIVERY_FEE if subtotal > 0 else Decimal("0.00")
+    tax_amount = (subtotal * TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    order_total = subtotal + delivery_fee + tax_amount
+    return float(subtotal), float(delivery_fee), float(tax_amount), float(order_total)
 
 
 def get_db():
@@ -37,11 +48,29 @@ def _update_order_total(c, order_id):
     return total
 
 
+def _deduct_product_stock(c, items):
+    for item in items:
+        quantity = int(item['quantity'])
+        stock = item['stock']
+        if quantity <= 0 or stock is None or stock < quantity:
+            return False
+
+    for item in items:
+        quantity = int(item['quantity'])
+        updated = c.execute(
+            "UPDATE Products SET stock = stock - ? WHERE product_id = ? AND stock >= ?",
+            (quantity, item['product_id'], quantity)
+        )
+        if updated.rowcount != 1:
+            return False
+    return True
+
+
 def _sync_persisted_cart_to_session(c, user_id):
     """Fetch user's cart order and sync to session."""
     order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
     if order:
-        items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+        items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
         cart = _build_cart_dict(items)
         session['cart'] = cart
         session.modified = True
@@ -97,7 +126,7 @@ def cart_page():
                         item_price = price
                         c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
                 _update_order_total(c, order_id)
-                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
                 connect.close()
                 cart = _build_cart_dict(items)
@@ -115,24 +144,25 @@ def cart_page():
             if qty <= 0:
                 cart.pop(key, None)
             else:
+                connect = get_db()
+                c = connect.cursor()
+                prod = c.execute("SELECT product_id, product_name, price, image AS image_url, category_id, stock FROM Products WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
+                connect.close()
+                if not prod or prod['stock'] is None or qty > prod['stock']:
+                    return redirect(url_for('cart_page', error='stock'))
                 if key in cart:
                     item_price = float(cart[key].get('price', 0.0))
                     cart[key]['quantity'] = qty
                 else:
-                    connect = get_db()
-                    c = connect.cursor()
-                    prod = c.execute("SELECT product_id, product_name, price, image_url, category_id FROM Products WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
-                    connect.close()
-                    if prod:
-                        item_price = float(prod['price']) if prod['price'] is not None else 0.0
-                        cart[key] = {
-                            'product_id': prod['product_id'],
-                            'product_name': prod['product_name'],
-                            'price': item_price,
-                            'image_url': prod['image_url'],
-                            'category_name': None,
-                            'quantity': qty
-                        }
+                    item_price = float(prod['price']) if prod['price'] is not None else 0.0
+                    cart[key] = {
+                        'product_id': prod['product_id'],
+                        'product_name': prod['product_name'],
+                        'price': item_price,
+                        'image_url': prod['image_url'],
+                        'category_name': None,
+                        'quantity': qty
+                    }
             session['cart'] = cart
             session.modified = True
             if is_ajax:
@@ -151,7 +181,7 @@ def cart_page():
                     order_id = order['order_id']
                     c.execute("DELETE FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id))
                     _update_order_total(c, order_id)
-                    items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                    items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                     connect.commit()
                     connect.close()
 
@@ -180,7 +210,7 @@ def cart_page():
             connect = get_db()
             c = connect.cursor()
             product = c.execute("""
-                                SELECT p.product_id, p.product_name, p.price, p.image_url, c.category_name
+                                SELECT p.product_id, p.product_name, p.price, p.image AS image_url, p.stock, c.category_name
                                 FROM Products p
                                 LEFT JOIN Categories c ON p.category_id = c.category_id
                                 WHERE p.product_id = ?
@@ -190,6 +220,9 @@ def cart_page():
 
             if not product:
                 return redirect(request.referrer or url_for('menu_page'))
+
+            if product['stock'] is None or product['stock'] <= 0:
+                return redirect(url_for('cart_page', error='stock'))
 
             user_id = session.get('user_id')
             # If user is signed in, persist the cart as an Orders row with status 'cart'
@@ -211,6 +244,9 @@ def cart_page():
                 existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product['product_id'])).fetchone()
                 if existing:
                     new_qty = existing['quantity'] + 1
+                    if new_qty > product['stock']:
+                        connect.close()
+                        return redirect(url_for('cart_page', error='stock'))
                     c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (new_qty, existing['order_item_id']))
                 else:
                     c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)",
@@ -220,7 +256,7 @@ def cart_page():
                 _update_order_total(c, order_id)
 
                 # fetch order items to mirror session cart for UI
-                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
                 connect.close()
 
@@ -233,6 +269,8 @@ def cart_page():
             cart = session.get('cart', {})
             key = str(product['product_id'])
             if key in cart:
+                if cart[key].get('quantity', 0) >= product['stock']:
+                    return redirect(url_for('cart_page', error='stock'))
                 cart[key]['quantity'] = cart[key].get('quantity', 0) + 1
             else:
                 cart[key] = {
@@ -259,11 +297,18 @@ def cart_page():
             order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
             if order:
                 order_id = order['order_id']
+                connect.execute("BEGIN IMMEDIATE")
+                items = c.execute("SELECT oi.product_id, oi.quantity, p.stock FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
+                if not _deduct_product_stock(c, items):
+                    connect.rollback()
+                    connect.close()
+                    return redirect(url_for('cart_page', error='stock'))
                 # mark order as pending shipping
                 c.execute("UPDATE Orders SET status = 'Pending' WHERE order_id = ?", (order_id,))
                 # ensure total_price is up-to-date
                 total_row = c.execute("SELECT SUM(quantity * price_at_purchase) AS total FROM Order_Items WHERE order_id = ?", (order_id,)).fetchone()
-                total = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                subtotal = total_row['total'] if total_row and total_row['total'] is not None else 0.0
+                _, _, _, total = _calculate_checkout_totals(subtotal)
                 c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
                 # record payment as Paid
                 pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
@@ -281,6 +326,20 @@ def cart_page():
                 connect.close()
                 return redirect(url_for('cart_page'))
 
+            connect.execute("BEGIN IMMEDIATE")
+            stock_items = []
+            for item in cart.values():
+                product = c.execute("SELECT stock FROM Products WHERE product_id = ?", (item['product_id'],)).fetchone()
+                stock_items.append({
+                    'product_id': item['product_id'],
+                    'quantity': int(item.get('quantity', 1)),
+                    'stock': product['stock'] if product else None
+                })
+            if not _deduct_product_stock(c, stock_items):
+                connect.rollback()
+                connect.close()
+                return redirect(url_for('cart_page', error='stock'))
+
             # create new order from session cart
             order_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
             total = 0.0
@@ -288,6 +347,7 @@ def cart_page():
                 qty = int(v.get('quantity', 1))
                 price = float(v.get('price', 0.0))
                 total += qty * price
+            _, _, _, total = _calculate_checkout_totals(total)
 
             # create a new order with explicit next order_id and status Pending
             status = 'Pending'
@@ -318,7 +378,7 @@ def cart_page():
         c = connect.cursor()
         order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (session.get('user_id'),)).fetchone()
         if order:
-            items = c.execute("SELECT oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+            items = c.execute("SELECT oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
             for it in items:
                 cart_items.append({
                     'product_id': it['product_id'],
@@ -333,7 +393,17 @@ def cart_page():
             cart_items = list(session.get('cart', {}).values())
 
     cart_total = sum(float(item.get('price', 0.0)) * int(item.get('quantity', 0)) for item in cart_items)
-    return render_template('Cart.html', cart_items=cart_items, cart_total=cart_total, current_user=session.get('full_name'))
+    cart_total, delivery_fee, tax_amount, order_total = _calculate_checkout_totals(cart_total)
+    return render_template(
+        'Cart.html',
+        cart_items=cart_items,
+        cart_total=cart_total,
+        delivery_fee=delivery_fee,
+        tax_rate=float(TAX_RATE),
+        tax_amount=tax_amount,
+        order_total=order_total,
+        current_user=session.get('full_name')
+    )
 
 @website.route("/signin", methods=["GET", "POST"])
 def signin_page():
@@ -442,7 +512,8 @@ def home_page():
                         SELECT p.product_id,
                             p.product_name,
                             p.price,
-                            p.image_url,
+                            p.image AS image_url,
+                            p.stock,
                             c.category_name,
                             SUM(oi.quantity) AS total_units_sold,
                             SUM(oi.quantity * oi.price_at_purchase) AS total_revenue
@@ -471,7 +542,8 @@ def menu_page():
                             p.product_name,
                             p.price,
                             p.description,
-                            p.image_url
+                            p.image AS image_url,
+                            p.stock
                         FROM Products AS p
                         LEFT JOIN Categories AS c
                             ON p.category_id = c.category_id

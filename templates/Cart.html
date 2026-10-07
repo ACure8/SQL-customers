@@ -39,39 +39,54 @@
                     </div>
                 </div>
                 {% if cart_items and cart_items|length > 0 %}
-                    <ul class="cart-list">
-                        {% for item in cart_items %}
-                        <li class="cart-item" data-product-id="{{ item.product_id }}" data-price="{{ item.price }}">
-                            <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}">
-                            <strong>{{ item.product_name }}</strong>
-                            <div class="cart-controls">
-                                <div class="qty-stepper" aria-label="Quantity selector for {{ item.product_name }}">
-                                    <button type="button" class="qty-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
-                                    <input type="number" class="qty-input" value="{{ item.quantity }}" min="0" step="1" aria-label="Quantity for {{ item.product_name }}">
-                                    <button type="button" class="qty-btn" data-action="increase" aria-label="Increase quantity">+</button>
+                    <div class="cart-layout">
+                        <ul class="cart-list">
+                            {% for item in cart_items %}
+                            <li class="cart-item" data-product-id="{{ item.product_id }}" data-price="{{ item.price }}">
+                                <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}">
+                                <strong>{{ item.product_name }}</strong>
+                                <div class="cart-controls">
+                                    <div class="qty-stepper" aria-label="Quantity selector for {{ item.product_name }}">
+                                        <button type="button" class="qty-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
+                                        <input type="number" class="qty-input" value="{{ item.quantity }}" min="0" step="1" aria-label="Quantity for {{ item.product_name }}">
+                                        <button type="button" class="qty-btn" data-action="increase" aria-label="Increase quantity">+</button>
+                                    </div>
+                                    <form action="{{ url_for('cart_page') }}" method="post" class="inline-form remove-form">
+                                        <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                                        <input type="hidden" name="action" value="remove">
+                                        <button type="submit" class="btn-link">Remove</button>
+                                    </form>
                                 </div>
-                                <form action="{{ url_for('cart_page') }}" method="post" class="inline-form remove-form">
-                                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                                    <input type="hidden" name="action" value="remove">
-                                    <button type="submit" class="btn-link">Remove</button>
-                                </form>
+                                <div class="cart-price">
+                                    <span class="item-total">${{ "%.2f"|format(item.price * item.quantity) }}</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <aside class="cart-summary" data-delivery-fee="{{ delivery_fee }}" data-tax-rate="{{ tax_rate }}">
+                            <h2>Order summary</h2>
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <strong class="cart-subtotal">${{ "%.2f"|format(cart_total) }}</strong>
                             </div>
-                            <div class="cart-price">
-                                <span class="item-total">${{ "%.2f"|format(item.price * item.quantity) }}</span>
+                            <div class="summary-row">
+                                <span>Delivery fee</span>
+                                <strong class="delivery-total">${{ "%.2f"|format(delivery_fee) }}</strong>
                             </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    <div class="cart-summary">
-                        <div class="summary-row">
-                            <span>Subtotal</span>
-                            <strong class="cart-total">${{ "%.2f"|format(cart_total) }}</strong>
-                        </div>
+                            <div class="summary-row">
+                                <span>Tax (15%)</span>
+                                <strong class="tax-total">${{ "%.2f"|format(tax_amount) }}</strong>
+                            </div>
+                            <div class="summary-row summary-grand-total">
+                                <span>Total</span>
+                                <strong class="order-total">${{ "%.2f"|format(order_total) }}</strong>
+                            </div>
+                            <form action="{{ url_for('cart_page') }}" method="post">
+                                <input type="hidden" name="action" value="purchase">
+                                <button type="submit" class="btn-primary">Proceed to checkout</button>
+                            </form>
+                        </aside>
                     </div>
-                    <form action="{{ url_for('cart_page') }}" method="post">
-                        <input type="hidden" name="action" value="purchase">
-                        <button type="submit" class="btn-primary">Purchase</button>
-                    </form>
                 {% else %}
                     <div class="empty-cart">
                         <i class="ri-shopping-bag-3-line empty-cart-icon"></i>
