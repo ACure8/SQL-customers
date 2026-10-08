@@ -39,7 +39,7 @@
         
         <div class="categorylist" id="categorylist">
             {% for category in categories %}
-            <div class="categorycard" id="categorycard" onclick="movecategories(this)">
+            <div class="categorycard" data-category-id="{{ category.category_id }}" onclick="movecategories(this)">
                 <img src="{{ url_for('static', filename=category.image_url) }}" alt="{{ category.category_name }}">
                 <div class ="categoryname">
                     {{ category.category_name }}
@@ -49,7 +49,7 @@
         </div>
         <div class="products">
             {% for product in products %}
-            <div class="productcards">
+            <div class="productcards" data-category-id="{{ product.category_id }}">
                 <img src="{{ product.image_url }}" alt="{{ product.product_name }}">
                 <div class ="productdetails">
                     <div class="productnameprice">

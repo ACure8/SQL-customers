@@ -9,47 +9,84 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.9.0/fonts/remixicon.css" rel="stylesheet" />
     <title>Error - WowFoods</title>
 </head>
-<body>
-    <nav class="nav">
-        <a href="{{ url_for('home_page') }}">
-            <img id="logo" src="{{ url_for('static', filename='logos/white w logo.png') }}" alt="wowfoods-logo">
-        </a>
-        <div class="contentbar">
-            <i class="ri-menu-fill"></i>
-        </div>
-        <div class="nav-buttons">
-            <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
-            <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
-            {% if current_user %}
-                <a href="{{ url_for('accounts_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>{{ current_user }}</a>
-            {% else %}
-                <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
-            {% endif %}
-            <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
-        </div>
-    </nav>
-
-    <div class="error-container">
-        
-        <h1 class="error-code">{{ error_code }}</h1>
-        <h2 class="error-title">{{ error_title }}</h2>
-        
-        <p class="error-message">{{ error_message }}</p>
-
-        {% if error_details %}
-        <div class="error-details">
-            {{ error_details }}
-        </div>
-        {% endif %}
-
-        <div class="error-actions">
-            <a href="{{ url_for('home_page') }}" class="error-btn error-btn-primary">
-                Go Home
+    <body>
+        <nav class="nav">
+            <a href="{{ url_for('home_page') }}">
+                <img id="logo" src="{{ url_for('static', filename='logos/white w logo.png') }}" alt="wowfoods-logo">
             </a>
-            <button class="error-btn error-btn-secondary" onclick="window.history.back()">
-                ← Go Back
-            </button>
+            <div class="contentbar">
+                <i class="ri-menu-fill"></i>
+            </div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('home_page') }}" id="navbutton" class="home">Home</a>
+                <a href="{{ url_for('menu_page') }}" id="navbutton" class="menu">Menu</a>
+                {% if current_user %}
+                    <a href="{{ url_for('accounts_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>{{ current_user }}</a>
+                {% else %}
+                    <a href="{{ url_for('signin_page') }}" id="navbutton" class="calltoaction"><i class="ri-user-line" id="navi"></i>Sign in</a>
+                {% endif %}
+                <a href="{{ url_for('cart_page') }}" id="navbutton" class="calltoaction"><i class="ri-shopping-cart-2-line" id="navi"></i>Cart</a>
+            </div>
+        </nav>
+
+        <div class="error-container">
+            
+            <h1 class="error-code">{{ error_code }}</h1>
+            <h2 class="error-title">{{ error_title }}</h2>
+            
+            <p class="error-message">{{ error_message }}</p>
+
+            {% if error_details %}
+            <div class="error-details">
+                {{ error_details }}
+            </div>
+            {% endif %}
+
+            <div class="error-actions">
+                <a href="{{ url_for('home_page') }}" class="error-btn error-btn-primary">
+                    Go Home
+                </a>
+                <button class="error-btn error-btn-secondary" onclick="window.history.back()">
+                    ← Go Back
+                </button>
+            </div>
         </div>
-    </div>
-</body>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footerparts">
+                    <h3>Wowfoods</h3>
+                    <p>Delicious, healthy food delivered to your door. Quality you can always trust.</p>
+                </div>
+
+                <div class="footerparts">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li>Home</li>
+                        <li>Menu</li>
+                        <li>Sign In</li>
+                        <li>Cart</li>
+                    </ul>
+                </div>
+
+                <div class="footerparts">
+                    <h4>Support</h4>
+                    <ul>
+                        <li>Contact Us</li>
+                        <li>Privacy Policy</li>
+                        <li>Terms of Service</li>
+                        <li>Rewards Terms</li>
+                    </ul>
+                </div>
+
+                <div class="footerparts">
+                    <h4>Contact</h4>
+                    <p><a href="mailto:support@wowfoods.com">support@wowfoods.com</a></p>
+                    <p>Available 24/7 for support</p>
+                </div>
+            </div>
+
+            <p>&copy; 2026 Wow Foods. All rights reserved.</p>
+        </footer>
+    </body>
 </html>

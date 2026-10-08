@@ -35,7 +35,8 @@ def _build_cart_dict(items):
             'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
             'image_url': it['image_url'],
             'category_name': None,
-            'quantity': it['quantity']
+            'quantity': it['quantity'],
+            'stock': it['stock'] if 'stock' in it.keys() else 0
         }
     return cart
 
@@ -70,7 +71,7 @@ def _sync_persisted_cart_to_session(c, user_id):
     """Fetch user's cart order and sync to session."""
     order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
     if order:
-        items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+        items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url, p.stock FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
         cart = _build_cart_dict(items)
         session['cart'] = cart
         session.modified = True
@@ -101,6 +102,11 @@ def cart_page():
                 qty = 1
 
             is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            if qty < 1:
+                if is_ajax:
+                    return jsonify({'status': 'error', 'message': 'Quantity must be at least 1'}), 400
+                return redirect(url_for('cart_page'))
+
             user_id = session.get('user_id')
             item_price = 0.0
             if user_id:
@@ -113,6 +119,12 @@ def cart_page():
                         return jsonify({'status': 'error', 'message': 'Cart not found'})
                     return redirect(request.referrer or url_for('cart_page'))
                 order_id = order['order_id']
+                product = c.execute("SELECT price, stock FROM Products WHERE product_id = ?", (product_id,)).fetchone()
+                if qty > 0 and (not product or product['stock'] is None or qty > product['stock']):
+                    connect.close()
+                    if is_ajax:
+                        return jsonify({'status': 'error', 'message': 'Not enough stock available'}), 409
+                    return redirect(url_for('cart_page', error='stock'))
                 existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id)).fetchone()
                 if qty <= 0:
                     if existing:
@@ -121,8 +133,7 @@ def cart_page():
                     if existing:
                         c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (qty, existing['order_item_id']))
                     else:
-                        prod = c.execute("SELECT price FROM Products WHERE product_id = ?", (product_id,)).fetchone()
-                        price = float(prod['price']) if prod and prod['price'] is not None else 0.0
+                        price = float(product['price']) if product['price'] is not None else 0.0
                         item_price = price
                         c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
                 _update_order_total(c, order_id)
@@ -149,10 +160,13 @@ def cart_page():
                 prod = c.execute("SELECT product_id, product_name, price, image AS image_url, category_id, stock FROM Products WHERE product_id = ? LIMIT 1", (product_id,)).fetchone()
                 connect.close()
                 if not prod or prod['stock'] is None or qty > prod['stock']:
+                    if is_ajax:
+                        return jsonify({'status': 'error', 'message': 'Not enough stock available'}), 409
                     return redirect(url_for('cart_page', error='stock'))
                 if key in cart:
                     item_price = float(cart[key].get('price', 0.0))
                     cart[key]['quantity'] = qty
+                    cart[key]['stock'] = prod['stock']
                 else:
                     item_price = float(prod['price']) if prod['price'] is not None else 0.0
                     cart[key] = {
@@ -161,7 +175,8 @@ def cart_page():
                         'price': item_price,
                         'image_url': prod['image_url'],
                         'category_name': None,
-                        'quantity': qty
+                        'quantity': qty,
+                        'stock': prod['stock']
                     }
             session['cart'] = cart
             session.modified = True
@@ -378,19 +393,26 @@ def cart_page():
         c = connect.cursor()
         order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (session.get('user_id'),)).fetchone()
         if order:
-            items = c.execute("SELECT oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
+            items = c.execute("SELECT oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url, p.stock FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order['order_id'],)).fetchall()
             for it in items:
                 cart_items.append({
                     'product_id': it['product_id'],
                     'product_name': it['product_name'],
                     'quantity': it['quantity'],
                     'price': float(it['price_at_purchase']) if it['price_at_purchase'] is not None else 0.0,
-                    'image_url': it['image_url']
+                    'image_url': it['image_url'],
+                    'stock': it['stock'] or 0
                 })
         connect.close()
     else:
         if session.get('cart'):
             cart_items = list(session.get('cart', {}).values())
+            connect = get_db()
+            c = connect.cursor()
+            for item in cart_items:
+                stock_row = c.execute("SELECT stock FROM Products WHERE product_id = ?", (item['product_id'],)).fetchone()
+                item['stock'] = stock_row['stock'] or 0 if stock_row else 0
+            connect.close()
 
     cart_total = sum(float(item.get('price', 0.0)) * int(item.get('quantity', 0)) for item in cart_items)
     cart_total, delivery_fee, tax_amount, order_total = _calculate_checkout_totals(cart_total)

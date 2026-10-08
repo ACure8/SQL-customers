@@ -130,6 +130,15 @@ body {
   gap: 0.5rem;
 }
 
+.cart-error {
+  margin: 1rem auto;
+  max-width: 76rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #a32020;
+  background: #fff1f1;
+  color: #7a1717;
+}
+
 .empty-cart-icon {
   font-size: 3rem;
   color: #36bd18;
@@ -213,6 +222,12 @@ body {
 
 .qty-btn:hover {
   background: #e8e8e8;
+}
+
+.qty-btn:disabled {
+  color: #999;
+  cursor: not-allowed;
+  background: #f4f4f4;
 }
 
 .qty-input {

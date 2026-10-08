@@ -54,32 +54,15 @@ document.addEventListener('submit', function (e) {
 });
 
 
-// function showSuccessMessage(message) {
-//     // Create a temporary success notification
-//     const notification = document.createElement('div');
-//     notification.style.cssText = `
-//         position: fixed;
-//         top: 20px;
-//         right: 20px;
-//         background: #10b981;
-//         color: white;
-//         padding: 16px 24px;
-//         border-radius: 12px;
-//         font-weight: 600;
-//         box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-//         z-index: 1000;
-//         animation: slideInRight 0.5s ease;
-//     `;
-//     notification.textContent = message;
-
-//     document.body.appendChild(notification);
-
-//     setTimeout(() => {
-//         notification.remove();
 function movecategories(clickedEl) {
+  const selectedCategoryId = clickedEl.dataset.categoryId;
+
   document.querySelectorAll('.categorycard').forEach(cc => {
     cc.classList.add('move');
     cc.classList.toggle('selected', cc === clickedEl);
+  });
+  document.querySelectorAll('.productcards').forEach(product => {
+    product.hidden = product.dataset.categoryId !== selectedCategoryId;
   });
   var categorylist = document.getElementById('categorylist');
 
@@ -104,6 +87,26 @@ function movecategories(clickedEl) {
 })();
 
 function initializeCartPage() {
+  const summary = document.querySelector('.cart-summary');
+  const cartError = document.querySelector('.cart-error');
+  const deliveryFee = Number(summary?.dataset.deliveryFee || 0);
+  const taxRate = Number(summary?.dataset.taxRate || 0);
+
+  const syncQuantityControls = (item) => {
+    const input = item.querySelector('.qty-input');
+    const decreaseButton = item.querySelector('[data-action="decrease"]');
+    const increaseButton = item.querySelector('[data-action="increase"]');
+    if (!input || !decreaseButton || !increaseButton) return;
+
+    const quantity = Number(input.value || 1);
+    const stockLimit = Number(item.dataset.stock || 0);
+    if (!item.dataset.previousQuantity) item.dataset.previousQuantity = input.value;
+    input.min = '1';
+    input.max = String(Math.max(1, stockLimit));
+    decreaseButton.disabled = quantity <= 1;
+    increaseButton.disabled = quantity >= stockLimit;
+  };
+
   const updateCartTotal = () => {
     const items = document.querySelectorAll('.cart-item');
     let total = 0;
@@ -115,15 +118,22 @@ function initializeCartPage() {
       total += lineTotal;
 
       const totalEl = item.querySelector('.item-total');
-      if (totalEl) {
-        totalEl.textContent = `$${lineTotal.toFixed(2)}`;
-      }
+      if (totalEl) totalEl.textContent = `$${lineTotal.toFixed(2)}`;
+      syncQuantityControls(item);
     });
 
-    const totalEl = document.querySelector('.cart-total');
-    if (totalEl) {
-      totalEl.textContent = `$${total.toFixed(2)}`;
-    }
+    const subtotal = Math.round((total + Number.EPSILON) * 100) / 100;
+    const tax = Math.round((subtotal * taxRate + Number.EPSILON) * 100) / 100;
+    const delivery = subtotal > 0 ? deliveryFee : 0;
+    const subtotalEl = document.querySelector('.cart-subtotal');
+    const deliveryEl = document.querySelector('.delivery-total');
+    const taxEl = document.querySelector('.tax-total');
+    const orderTotalEl = document.querySelector('.order-total');
+
+    if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+    if (deliveryEl) deliveryEl.textContent = `$${delivery.toFixed(2)}`;
+    if (taxEl) taxEl.textContent = `$${tax.toFixed(2)}`;
+    if (orderTotalEl) orderTotalEl.textContent = `$${(subtotal + delivery + tax).toFixed(2)}`;
   };
 
   const sendQuantityUpdate = async (productId, quantity) => {
@@ -141,16 +151,20 @@ function initializeCartPage() {
       },
       body: formData.toString()
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to update cart');
+    const result = await response.json();
+    if (!response.ok || result?.status !== 'ok') {
+      throw new Error(result?.message || 'Failed to update cart');
     }
-
-    return response.json();
+    return result;
   };
 
-  const stepperButtons = document.querySelectorAll('.qty-btn');
-  stepperButtons.forEach((button) => {
+  const showCartError = (error) => {
+    if (!cartError) return;
+    cartError.textContent = error.message;
+    cartError.hidden = false;
+  };
+
+  document.querySelectorAll('.qty-btn').forEach((button) => {
     button.addEventListener('click', async () => {
       const stepper = button.closest('.qty-stepper');
       const input = stepper?.querySelector('.qty-input');
@@ -158,56 +172,58 @@ function initializeCartPage() {
       if (!stepper || !input || !item) return;
 
       const productId = item.dataset.productId;
-      const currentValue = Number(input.value || 0);
-      const nextValue = button.dataset.action === 'increase' ? currentValue + 1 : Math.max(0, currentValue - 1);
-      input.value = nextValue;
+      const currentValue = Number(input.value || 1);
+      const stockLimit = Number(item.dataset.stock || 0);
+      if (button.dataset.action === 'decrease' && currentValue <= 1) return;
+      if (button.dataset.action === 'increase' && currentValue >= stockLimit) return;
 
+      const nextValue = button.dataset.action === 'increase' ? currentValue + 1 : currentValue - 1;
+      input.value = nextValue;
       try {
-        const result = await sendQuantityUpdate(productId, nextValue);
-        if (result?.status === 'ok' && nextValue === 0) {
-          item.remove();
-        }
+        await sendQuantityUpdate(productId, nextValue);
+        item.dataset.previousQuantity = String(nextValue);
+        if (cartError) cartError.hidden = true;
         updateCartTotal();
       } catch (error) {
-        console.error(error);
         input.value = currentValue;
+        syncQuantityControls(item);
+        showCartError(error);
       }
     });
   });
 
-  const inputs = document.querySelectorAll('.qty-input');
-  inputs.forEach((input) => {
+  document.querySelectorAll('.qty-input').forEach((input) => {
     input.addEventListener('change', async () => {
       const item = input.closest('.cart-item');
       if (!item) return;
 
       const productId = item.dataset.productId;
-      const previousValue = Number(item.dataset.previousQuantity || input.value || 0);
-      const nextValue = Math.max(0, Number(input.value || 0));
+      const previousValue = Number(item.dataset.previousQuantity || input.defaultValue || 1);
+      const stockLimit = Number(item.dataset.stock || 0);
+      const requestedValue = Number(input.value || 1);
+      const nextValue = Math.min(
+        Math.max(1, stockLimit),
+        Math.max(1, Math.floor(Number.isFinite(requestedValue) ? requestedValue : 1))
+      );
       input.value = nextValue;
-      item.dataset.previousQuantity = String(nextValue);
 
       try {
-        const result = await sendQuantityUpdate(productId, nextValue);
-        if (result?.status === 'ok' && nextValue === 0) {
-          item.remove();
-        }
+        await sendQuantityUpdate(productId, nextValue);
+        item.dataset.previousQuantity = String(nextValue);
+        if (cartError) cartError.hidden = true;
         updateCartTotal();
       } catch (error) {
-        console.error(error);
         input.value = previousValue;
+        syncQuantityControls(item);
+        showCartError(error);
       }
     });
   });
 
   document.querySelectorAll('.remove-form').forEach((form) => {
-    form.addEventListener('submit', (event) => {
-      const item = form.closest('.cart-item');
-      if (!item) return;
+    form.addEventListener('submit', () => {
       const submitButton = form.querySelector('button[type="submit"]');
-      if (submitButton) {
-        submitButton.disabled = true;
-      }
+      if (submitButton) submitButton.disabled = true;
     });
   });
 

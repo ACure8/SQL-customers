@@ -7,11 +7,6 @@
     --maincolour: #36bd18;
 }
 
-a {
-  color: #36bd18;
-}
-
-
 html,
 body {
   height: 100%;
@@ -243,6 +238,10 @@ footer {
     width: 90%;
     max-width: 90%;
   }
+}
+
+footer a{
+  color: #36bd18;
 }
 
 .orders-section {

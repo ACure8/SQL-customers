@@ -37,19 +37,20 @@
                             Your Cart
                         </h1>
                     </div>
+                    <p class="cart-error" role="alert" {% if request.args.get('error') != 'stock' %}hidden{% endif %}>There is not enough stock for that quantity. Review your cart and try again.</p>
                 </div>
                 {% if cart_items and cart_items|length > 0 %}
                     <div class="cart-layout">
                         <ul class="cart-list">
                             {% for item in cart_items %}
-                            <li class="cart-item" data-product-id="{{ item.product_id }}" data-price="{{ item.price }}">
-                                <img src="{{ url_for('static', filename=item.image_url) }}" alt="{{ item.product_name }}">
+                            <li class="cart-item" data-product-id="{{ item.product_id }}" data-price="{{ item.price }}" data-stock="{{ item.stock }}">
+                                <img src="{{ item.image_url }}" alt="{{ item.product_name }}">
                                 <strong>{{ item.product_name }}</strong>
                                 <div class="cart-controls">
                                     <div class="qty-stepper" aria-label="Quantity selector for {{ item.product_name }}">
-                                        <button type="button" class="qty-btn" data-action="decrease" aria-label="Decrease quantity">-</button>
-                                        <input type="number" class="qty-input" value="{{ item.quantity }}" min="0" step="1" aria-label="Quantity for {{ item.product_name }}">
-                                        <button type="button" class="qty-btn" data-action="increase" aria-label="Increase quantity">+</button>
+                                        <button type="button" class="qty-btn" data-action="decrease" aria-label="Decrease quantity" {% if item.quantity <= 1 %}disabled{% endif %}>-</button>
+                                        <input type="number" class="qty-input" value="{{ item.quantity }}" min="1" max="{{ item.stock }}" step="1" aria-label="Quantity for {{ item.product_name }}">
+                                        <button type="button" class="qty-btn" data-action="increase" aria-label="Increase quantity" {% if item.quantity >= item.stock %}disabled{% endif %}>+</button>
                                     </div>
                                     <form action="{{ url_for('cart_page') }}" method="post" class="inline-form remove-form">
                                         <input type="hidden" name="product_id" value="{{ item.product_id }}">
