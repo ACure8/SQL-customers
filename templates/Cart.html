@@ -37,6 +37,7 @@
                             Your Cart
                         </h1>
                     </div>
+                    <p>The quantity of the products will reduce back to zero if you leave this page, this is to prevent potential errors for our dear customers.</p>
                     <p class="cart-error" role="alert" {% if request.args.get('error') != 'stock' %}hidden{% endif %}>There is not enough stock for that quantity. Try lowering the amount.</p>
                 </div>
                 {% if cart_items and cart_items|length > 0 %}
