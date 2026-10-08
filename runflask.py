@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 
 website = Flask(__name__, template_folder="templates", static_folder="static")
@@ -23,6 +23,20 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _user_is_15_or_older(date_of_birth):
+    if not date_of_birth:
+        return False
+
+    try:
+        birth_date = datetime.strptime(date_of_birth, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return False
+
+    today = date.today()
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age >= 15
 
 
 def _build_cart_dict(items):
@@ -308,6 +322,10 @@ def cart_page():
             user_id = session.get('user_id')
             connect = get_db()
             c = connect.cursor()
+            user = c.execute("SELECT date_of_birth FROM Users WHERE user_id = ? LIMIT 1", (user_id,)).fetchone()
+            if not user or not _user_is_15_or_older(user['date_of_birth']):
+                connect.close()
+                return redirect(url_for('signin_page'))
             # if a persisted 'cart' order exists for user, mark it as placed
             order = c.execute("SELECT order_id FROM Orders WHERE user_id = ? AND status = 'cart' LIMIT 1", (user_id,)).fetchone()
             if order:
@@ -450,6 +468,8 @@ def signin_page():
                 error = 'Passwords do not match'
             elif len(password) < 8:
                 error = 'Password must be at least 8 characters long'
+            elif not _user_is_15_or_older(date_of_birth):
+                error = 'You cannot buy from this website unless you are 15 or above.'
             else:
                 connect = get_db()
                 c = connect.cursor()
@@ -505,10 +525,13 @@ def signin_page():
                 verified = False
 
             if verified:
-                # set temporary session (signed-in) -- persists until sign out or browser close depending on config
-                session['user_id'] = user['user_id']
-                session['full_name'] = user.get('full_name') if isinstance(user, dict) or hasattr(user, 'get') else user['full_name']
-                return redirect(url_for('accounts_page'))
+                if not _user_is_15_or_older(user['date_of_birth']):
+                    error = 'You cannot buy from this website unless you are 15 or above.'
+                else:
+                    # set temporary session (signed-in) -- persists until sign out or browser close depending on config
+                    session['user_id'] = user['user_id']
+                    session['full_name'] = user.get('full_name') if isinstance(user, dict) or hasattr(user, 'get') else user['full_name']
+                    return redirect(url_for('accounts_page'))
             else:
                 error = 'Invalid credentials'
         else:
