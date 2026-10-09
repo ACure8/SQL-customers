@@ -43,6 +43,8 @@
                     <form id="loginFormSubmit" action="{{ url_for('signin_page') }}" method="POST" autocomplete="on">
                         {% if error %}
                             <p class="error-message">{{ error }}</p>
+                        {% elif success %}
+                            <p class="success-message" role="status" aria-live="polite">{{ success }}</p>
                         {% endif %}
                         <div class="form-group">
                             <input type="email"

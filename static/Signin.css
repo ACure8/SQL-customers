@@ -294,6 +294,11 @@ body:has(.signin.active) .form-container.active {
   color: #d32f2f;
 }
 
+.success-message {
+  color: #258313;
+  font-weight: bold;
+}
+
 .policy-link {
   color: #3b82f6;
   font-weight: 600;

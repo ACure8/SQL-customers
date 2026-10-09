@@ -501,7 +501,14 @@ def signin_page():
                                datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')))
                     connect.commit()
                     connect.close()
-                    return redirect(url_for('signin_page'))
+                    return render_template(
+                        'Signin.html',
+                        users=[],
+                        error=None,
+                        success="You've created an account.",
+                        formdata=formdata,
+                        current_user=session.get('full_name')
+                    )
                 connect.close()
 
         if error:
