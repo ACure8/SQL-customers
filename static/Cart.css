@@ -333,3 +333,9 @@ body {
   color: #36bd18;
   cursor: pointer;
 }
+
+.warning {
+  justify-content: center;
+  display: flex;
+  font-weight: bold;
+}

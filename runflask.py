@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 
+#connect the database to the website, and create shortcuts
 website = Flask(__name__, template_folder="templates", static_folder="static")
 website.secret_key = "****"
 DB_PATH = "wowfoodsnew.db"
@@ -11,6 +12,8 @@ DELIVERY_FEE = Decimal("2.00")
 TAX_RATE = Decimal("0.15")
 
 
+# Calculate the subtotal, delivery fee, tax, and final order total.
+# The Decimal library is used to avoid money rounding issues.
 def _calculate_checkout_totals(subtotal):
     subtotal = Decimal(str(subtotal)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     delivery_fee = DELIVERY_FEE if subtotal > 0 else Decimal("0.00")
@@ -19,12 +22,22 @@ def _calculate_checkout_totals(subtotal):
     return float(subtotal), float(delivery_fee), float(tax_amount), float(order_total)
 
 
+# Open a database connection and return rows as dictionary-like objects.
+# Enabling foreign_keys prevents abandoned rows when a user or order is deleted.
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
+# Return the next available integer primary key for a table.
+def _next_pk_value(c, table_name, column_name):
+    row = c.execute(f"SELECT COALESCE(MAX({column_name}), 0) + 1 AS next_id FROM {table_name}").fetchone()
+    return int(row['next_id']) if row and row['next_id'] is not None else 1
+
+
+# Enforce the age restriction for ordering products, Incase the user somehow was able to make and sign in to an underaged account
 def _user_is_15_or_older(date_of_birth):
     if not date_of_birth:
         return False
@@ -39,8 +52,8 @@ def _user_is_15_or_older(date_of_birth):
     return age >= 15
 
 
+# puts items in the cart database into a Python dictionary this will be saved in the flask's brower session
 def _build_cart_dict(items):
-    """Convert order items to session cart format."""
     cart = {}
     for it in items:
         cart[str(it['product_id'])] = {
@@ -93,6 +106,7 @@ def _sync_persisted_cart_to_session(c, user_id):
     return None
 
 
+# Handles adding, updating, removing, and purchasing items in the user's cart.
 @website.route('/cart', methods=['GET', 'POST'])
 def cart_page():
     # POST actions: add to cart (product_id) or purchase (action=purchase)
@@ -149,7 +163,8 @@ def cart_page():
                     else:
                         price = float(product['price']) if product['price'] is not None else 0.0
                         item_price = price
-                        c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
+                        next_order_item_id = _next_pk_value(c, 'Order_Items', 'order_item_id')
+                        c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)", (next_order_item_id, order_id, product_id, qty, price))
                 _update_order_total(c, order_id)
                 items = c.execute("SELECT oi.order_item_id, oi.product_id, p.product_name, oi.quantity, oi.price_at_purchase, p.image AS image_url FROM Order_Items oi LEFT JOIN Products p ON oi.product_id = p.product_id WHERE oi.order_id = ?", (order_id,)).fetchall()
                 connect.commit()
@@ -264,8 +279,7 @@ def cart_page():
                 else:
                     order_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
                     # compute next order_id
-                    max_row = c.execute("SELECT MAX(order_id) AS m FROM Orders").fetchone()
-                    next_order_id = (max_row['m'] if max_row and max_row['m'] is not None else 0) + 1
+                    next_order_id = _next_pk_value(c, 'Orders', 'order_id')
                     c.execute("INSERT INTO Orders (order_id, user_id, order_date, total_price, status) VALUES (?, ?, ?, ?, ?)", (next_order_id, user_id, order_date, 0.0, 'cart'))
                     order_id = next_order_id
 
@@ -278,8 +292,9 @@ def cart_page():
                         return redirect(url_for('cart_page', error='stock'))
                     c.execute("UPDATE Order_Items SET quantity = ? WHERE order_item_id = ?", (new_qty, existing['order_item_id']))
                 else:
-                    c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)",
-                              (order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
+                    next_order_item_id = _next_pk_value(c, 'Order_Items', 'order_item_id')
+                    c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)",
+                              (next_order_item_id, order_id, product['product_id'], 1, float(product['price']) if product['price'] is not None else 0.0))
 
                 # recompute order total
                 _update_order_total(c, order_id)
@@ -344,8 +359,7 @@ def cart_page():
                 _, _, _, total = _calculate_checkout_totals(subtotal)
                 c.execute("UPDATE Orders SET total_price = ? WHERE order_id = ?", (total, order_id))
                 # record payment as Paid
-                pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
-                next_pay_id = (pay_row['m'] if pay_row and pay_row['m'] is not None else 0) + 1
+                next_pay_id = _next_pk_value(c, 'Payments', 'payment_id')
                 payment_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
                 c.execute("INSERT INTO Payments (payment_id, order_id, amount_paid, payment_date, payment_status) VALUES (?, ?, ?, ?, ?)", (next_pay_id, order_id, total, payment_date, 'Paid'))
                 connect.commit()
@@ -384,18 +398,17 @@ def cart_page():
 
             # create a new order with explicit next order_id and status Pending
             status = 'Pending'
-            max_row = c.execute("SELECT MAX(order_id) AS m FROM Orders").fetchone()
-            next_order_id = (max_row['m'] if max_row and max_row['m'] is not None else 0) + 1
+            next_order_id = _next_pk_value(c, 'Orders', 'order_id')
             c.execute("INSERT INTO Orders (order_id, user_id, order_date, total_price, status) VALUES (?, ?, ?, ?, ?)", (next_order_id, user_id, order_date, total, status))
             order_id = next_order_id
             for key, item in cart.items():
                 product_id = item['product_id']
                 qty = int(item.get('quantity', 1))
                 price = float(item.get('price', 0.0))
-                c.execute("INSERT INTO Order_Items (order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?)", (order_id, product_id, qty, price))
+                next_order_item_id = _next_pk_value(c, 'Order_Items', 'order_item_id')
+                c.execute("INSERT INTO Order_Items (order_item_id, order_id, product_id, quantity, price_at_purchase) VALUES (?, ?, ?, ?, ?)", (next_order_item_id, order_id, product_id, qty, price))
             # record payment as Paid
-            pay_row = c.execute("SELECT MAX(payment_id) AS m FROM Payments").fetchone()
-            next_pay_id = (pay_row['m'] if pay_row and pay_row['m'] is not None else 0) + 1
+            next_pay_id = _next_pk_value(c, 'Payments', 'payment_id')
             payment_date = datetime.now(timezone.utc).isoformat(sep=' ', timespec='seconds')
             c.execute("INSERT INTO Payments (payment_id, order_id, amount_paid, payment_date, payment_status) VALUES (?, ?, ?, ?, ?)", (next_pay_id, order_id, total, payment_date, 'Paid'))
 
@@ -404,7 +417,7 @@ def cart_page():
             session.pop('cart', None)
             return redirect(url_for('accounts_page'))
 
-    # GET: render cart view (existing behavior)
+    # GET: render the cart page with current items and totals.
     cart_items = []
     if session.get('user_id'):
         connect = get_db()
@@ -445,6 +458,7 @@ def cart_page():
         current_user=session.get('full_name')
     )
 
+# Handles both login attempts and new account creation.
 @website.route("/signin", methods=["GET", "POST"])
 def signin_page():
     # if already signed in, show accounts page instead
@@ -477,7 +491,7 @@ def signin_page():
                 if existing:
                     error = 'An account with that email already exists'
                 else:
-                    next_id = c.execute("SELECT COALESCE(MAX(user_id), 0) + 1 FROM Users").fetchone()[0]
+                    next_id = _next_pk_value(c, 'Users', 'user_id')
                     c.execute("""
                         INSERT INTO Users
                             (user_id, full_name, email, password_hash, date_of_birth, wants_offers, created_at)
@@ -549,6 +563,7 @@ def signin_page():
     connect.close()
     return render_template('Signin.html', users=users, error=error, formdata=formdata, current_user=session.get('full_name'))
 
+# Homepage showing the brand and most popular products.
 @website.route("/")
 def home_page():
     connect = get_db()
@@ -571,6 +586,7 @@ def home_page():
     connect.close()
     return render_template('Wowfoods.html', popular=popular, current_user=session.get('full_name'))
 
+# Product browsing page showing categories and available products.
 @website.route("/menu")
 def menu_page():
     connect = get_db()
@@ -597,6 +613,8 @@ def menu_page():
     connect.close()
     return render_template('Menu.html', categories=categories, products=products, current_user=session.get('full_name'))
 
+
+# Account page for signed-in users. Shows order history, payment information, sign-out, and delete-account controls.
 @website.route("/accounts")
 def accounts_page():
     # protect accounts page: only accessible when signed in
@@ -645,6 +663,7 @@ def accounts_page():
     return render_template('Accounts.html', accounts=accounts, user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'), delete_error=request.args.get('delete_error'))
 
 
+# Permanently remove the current user's account and related order data.
 @website.route('/delete-account', methods=['POST'])
 def delete_account():
     user_id = session.get('user_id')
@@ -657,6 +676,7 @@ def delete_account():
     password = request.form.get('password', '')
     connect = get_db()
     c = connect.cursor()
+    connect.execute("PRAGMA foreign_keys = ON")
     user = c.execute("SELECT password_hash FROM Users WHERE user_id = ?", (user_id,)).fetchone()
     if not user or not password:
         connect.close()
@@ -687,6 +707,7 @@ def delete_account():
     return redirect(url_for('home_page'))
 
 
+# Clear the browser session and log the user out.
 @website.route('/signout', methods=['POST'])
 def signout():
     session.pop('user_id', None)

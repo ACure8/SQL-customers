@@ -1,3 +1,4 @@
+// SIGN UP tab will be viewed so adding these elements will start animations
 function showSignup() {
   document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
@@ -11,6 +12,7 @@ function showSignup() {
   if (forgot) forgot.classList.remove('active');
 }
 
+// SIGN IN tab will be viewed so adding these elements will start animations
 function showSignin() {
   document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
@@ -24,6 +26,7 @@ function showSignin() {
   if (forgot) forgot.classList.remove('active');
 }
 
+// FORGOT PASSWORD will be shown, and hides the other tabs
 function showForgotPassword() {
   document.body.classList.add('interactive');
   var login = document.getElementById('loginForm');
@@ -37,7 +40,8 @@ function showForgotPassword() {
   if (forgot) forgot.classList.add('active');
 }
 
-// basic client-side signup confirm-password check
+// Client-sided validation for the signup form before it reaches the server.
+// This gives quick feedback if passwords do not match or too short.
 document.addEventListener('submit', function (e) {
   if (e.target && e.target.id === 'signupFormSubmit') {
     var pwd = e.target.querySelector('input[name="password"]');
@@ -54,6 +58,8 @@ document.addEventListener('submit', function (e) {
 });
 
 
+// This handles category selection on the menu page.
+// The selected category is highlighted and only matching products are shown.
 function movecategories(clickedEl) {
   const selectedCategoryId = clickedEl.dataset.categoryId;
 
@@ -75,6 +81,7 @@ function movecategories(clickedEl) {
   }
 }
 
+// Duplicate the carousel slides so the slide show can loop endlessly.
 (() => {
   const track = document.querySelector('.carousel__track');
   if (!track) return;
@@ -86,12 +93,14 @@ function movecategories(clickedEl) {
   });
 })();
 
-function initializeCartPage() {
+// Initialize cart interactions when the cart page loads.(how the page handles information that it's given)
+function startCartPage() {
   const summary = document.querySelector('.cart-summary');
   const cartError = document.querySelector('.cart-error');
   const deliveryFee = Number(summary?.dataset.deliveryFee || 0);
   const taxRate = Number(summary?.dataset.taxRate || 0);
 
+  // Keeps the quantity options in sync with stock limits and disabled(unavailable) states.
   const syncQuantityControls = (item) => {
     const input = item.querySelector('.qty-input');
     const decreaseButton = item.querySelector('[data-action="decrease"]');
@@ -107,6 +116,7 @@ function initializeCartPage() {
     increaseButton.disabled = quantity >= stockLimit;
   };
 
+  // Live recalculation of subtotal, tax, delivery, and total after any quantity change.
   const updateCartTotal = () => {
     const items = document.querySelectorAll('.cart-item');
     let total = 0;
@@ -136,6 +146,7 @@ function initializeCartPage() {
     if (orderTotalEl) orderTotalEl.textContent = `$${(subtotal + delivery + tax).toFixed(2)}`;
   };
 
+  // Send the updated cart quantity to the server without reloading the page.
   const sendQuantityUpdate = async (productId, quantity) => {
     const formData = new URLSearchParams({
       product_id: productId,
@@ -158,12 +169,14 @@ function initializeCartPage() {
     return result;
   };
 
+  // Displays a cart error message if the server rejects the update.
   const showCartError = (error) => {
     if (!cartError) return;
     cartError.textContent = error.message;
     cartError.hidden = false;
   };
 
+  // Handles the +/- quantity buttons for each cart item.
   document.querySelectorAll('.qty-btn').forEach((button) => {
     button.addEventListener('click', async () => {
       const stepper = button.closest('.qty-stepper');
@@ -192,6 +205,7 @@ function initializeCartPage() {
     });
   });
 
+  // If a user types a quantity manually, we want to make sure if that is fine and if not we'll need to reduce it and save it.
   document.querySelectorAll('.qty-input').forEach((input) => {
     input.addEventListener('change', async () => {
       const item = input.closest('.cart-item');
@@ -220,6 +234,7 @@ function initializeCartPage() {
     });
   });
 
+  // Prevent duplicate remove clicks while the item is being deleted.
   document.querySelectorAll('.remove-form').forEach((form) => {
     form.addEventListener('submit', () => {
       const submitButton = form.querySelector('button[type="submit"]');
@@ -232,6 +247,6 @@ function initializeCartPage() {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.cart-item')) {
-    initializeCartPage();
+    startCartPage();
   }
 });
