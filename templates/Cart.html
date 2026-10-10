@@ -37,7 +37,7 @@
                             Your Cart
                         </h1>
                     </div>
-                    <p class="cart-error" role="alert" {% if request.args.get('error') != 'stock' %}hidden{% endif %}>There is not enough stock for that quantity. Try lowering the amount.</p>
+                    <p class="cart-error" role="alert" {% if request.args.get('error') != 'stock' %}hidden{% endif %}>There is not enough stock available for that quantity. Try lowering the amount, or buying a different product.</p>
                 </div>
                 {% if cart_items and cart_items|length > 0 %}
                     <div class="cart-layout">
