@@ -334,8 +334,3 @@ body {
   cursor: pointer;
 }
 
-.warning {
-  justify-content: center;
-  display: flex;
-  font-weight: bold;
-}
