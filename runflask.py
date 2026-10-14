@@ -16,7 +16,10 @@ TAX_RATE = Decimal("0.15")
 # The Decimal library is used to avoid money rounding issues.
 def _calculate_checkout_totals(subtotal):
     subtotal = Decimal(str(subtotal)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    delivery_fee = DELIVERY_FEE if subtotal > 0 else Decimal("0.00")
+    if subtotal > 0:
+        delivery_fee = DELIVERY_FEE 
+    else: 
+        Decimal("0.00")
     tax_amount = (subtotal * TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     order_total = subtotal + delivery_fee + tax_amount
     return float(subtotal), float(delivery_fee), float(tax_amount), float(order_total)
@@ -34,7 +37,10 @@ def get_db():
 # Return the next available integer primary key for a table.
 def _next_pk_value(c, table_name, column_name):
     row = c.execute(f"SELECT COALESCE(MAX({column_name}), 0) + 1 AS next_id FROM {table_name}").fetchone()
-    return int(row['next_id']) if row and row['next_id'] is not None else 1
+    if row and row['next_id'] is not None:
+        return int(row['next_id'])
+    else:
+        return 1
 
 
 # Enforce the age restriction for ordering products, Incase the user somehow was able to make and sign in to an underaged account
@@ -153,7 +159,7 @@ def cart_page():
                     if is_ajax:
                         return jsonify({'status': 'error', 'message': 'Not enough stock available'}), 409
                     return redirect(url_for('cart_page', error='stock'))
-                existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id)).fetchone()
+                existing = c.execute("SELECT order_item_id, order_id, product_id, quantity, price_at_purchase FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product_id)).fetchone()
                 if qty <= 0:
                     if existing:
                         c.execute("DELETE FROM Order_Items WHERE order_item_id = ?", (existing['order_item_id'],))
@@ -284,7 +290,7 @@ def cart_page():
                     order_id = next_order_id
 
                 # update or insert order item
-                existing = c.execute("SELECT * FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product['product_id'])).fetchone()
+                existing = c.execute("SELECT order_item_id, quantity FROM Order_Items WHERE order_id = ? AND product_id = ?", (order_id, product['product_id'])).fetchone()
                 if existing:
                     new_qty = existing['quantity'] + 1
                     if new_qty > product['stock']:
@@ -521,7 +527,7 @@ def signin_page():
         connect = get_db()
         c = connect.cursor()
         user = c.execute("""
-                        SELECT *
+                        SELECT user_id, full_name, password_hash, date_of_birth
                         FROM Users
                         WHERE email = ?
                         LIMIT 1
@@ -559,16 +565,7 @@ def signin_page():
             # account does not exist: keep form info and show error
             error = 'Account not found'
 
-    # provide list of users for template if needed and pass formdata and current user
-    connect = get_db()
-    c = connect.cursor()
-    users = c.execute("""
-                        SELECT *
-                        FROM Users AS u
-                        ORDER BY u.user_id
-                        """).fetchall()
-    connect.close()
-    return render_template('Signin.html', users=users, error=error, formdata=formdata, current_user=session.get('full_name'))
+    return render_template('Signin.html', error=error, formdata=formdata, current_user=session.get('full_name'))
 
 # Homepage showing the brand and most popular products.
 @website.route("/")
@@ -599,7 +596,7 @@ def menu_page():
     connect = get_db()
     c = connect.cursor()
     categories = c.execute("""
-                            SELECT *
+                            SELECT category_id, category_name, description, image
                             FROM Categories 
                             ORDER BY category_id ASC
                             """).fetchall()
@@ -630,14 +627,10 @@ def accounts_page():
 
     connect = get_db()
     c = connect.cursor()
-    accounts = c.execute("""
-                        SELECT *
-                        FROM Users
-                        ORDER BY user_id
-                        """).fetchall()
-    # optionally fetch orders for the signed-in user
+
+    # fetch orders for the signed-in user if there is
     user_orders = c.execute("""
-                        SELECT o.*
+                        SELECT o.order_id, o.user_id, o.order_date, o.total_price, o.status
                         FROM Orders o
                         WHERE o.user_id = ? AND o.status != 'cart'
                         ORDER BY o.order_date DESC
@@ -667,7 +660,7 @@ def accounts_page():
     for p in payments:
         payments_by_order.setdefault(p['order_id'], []).append(dict(p))
     connect.close()
-    return render_template('Accounts.html', accounts=accounts, user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'), delete_error=request.args.get('delete_error'))
+    return render_template('Accounts.html', user_orders=user_orders, order_items=items_by_order, payments=payments_by_order, current_user=session.get('full_name'), delete_error=request.args.get('delete_error'))
 
 
 # Permanently remove the current user's account and related order data.
@@ -683,7 +676,6 @@ def delete_account():
     password = request.form.get('password', '')
     connect = get_db()
     c = connect.cursor()
-    connect.execute("PRAGMA foreign_keys = ON")
     user = c.execute("SELECT password_hash FROM Users WHERE user_id = ?", (user_id,)).fetchone()
     if not user or not password:
         connect.close()

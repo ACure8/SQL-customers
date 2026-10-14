@@ -290,7 +290,8 @@ body {
 }
 
 .productprice {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  text-decoration: dotted;
   color: rgb(45, 178, 19);
 }
 
