@@ -57,10 +57,9 @@
             </div>
             <div class="carousel" aria-roledescription="carousel">
                 <div class="carousel__track">
-                    <img src="{{ url_for('static', filename='images/food.jpg') }}" class="carousel__slide" data-id="1" alt="img">
-                    <img src="{{ url_for('static', filename='images/food.jpg') }}" class="carousel__slide" data-id="2" alt="img">
-                    <img src="{{ url_for('static', filename='images/food.jpg') }}" class="carousel__slide" data-id="3" alt="img">
-                    <img src="{{ url_for('static', filename='images/food.jpg') }}" class="carousel__slide" data-id="4" alt="img">
+                    {% for product in popular[:5] %}
+                        <img src="{{ product.image_url }}" class="carousel__slide" alt="{{ product.product_name }}">
+                    {% endfor %}
                 </div>
             </div>
         </div>
