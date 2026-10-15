@@ -858,7 +858,7 @@ def menu_page():
     c = connect.cursor()
     categories = c.execute(
         """
-                            SELECT category_id, category_name, description, image
+                            SELECT category_id, category_name, description, image as image_url
                             FROM Categories 
                             ORDER BY category_id ASC
                             """
