@@ -20,7 +20,7 @@ def _calculate_checkout_totals(subtotal):
     if subtotal > 0:
         delivery_fee = DELIVERY_FEE
     else:
-        Decimal("0.00")
+        delivery_fee = Decimal("0.00")
     tax_amount = (subtotal * TAX_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     order_total = subtotal + delivery_fee + tax_amount
     return float(subtotal), float(delivery_fee), float(tax_amount), float(order_total)
